@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #-------------------------------------------------------------------------------
 # Name:          foptics.py
 # Purpose:       Fourier Optics Utility Functions
