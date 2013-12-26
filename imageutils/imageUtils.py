@@ -17,7 +17,9 @@ import matplotlib.cm as cm
 
 
 def cv2mpl(im):
-    """color image in openCV is B,G,R, in matplotlib it is
+    """Convert 3-D color image numpy array created using OpenCV's imread to
+        matplotlib's 3-D color image for displaying
+        color image in openCV is B,G,R, in matplotlib it is
        R,G,B. Assuming color image
     """
     nm = np.zeros(im.shape,dtype=im.dtype)
