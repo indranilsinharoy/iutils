@@ -20,7 +20,7 @@ import math as _math
 import scipy.special as _sps
 
 
-def fft_freq_bin(N, sides='comp', order=0, Fs=1):
+def fft_freq_bin(N, sides='full', order=0, Fs=1):
     """Returns an array of frequency indices (bins) in cycles per unit. If `Fs=1`, the returned vector represents the normalized frequency 
     
     Parameters
@@ -30,13 +30,13 @@ def fft_freq_bin(N, sides='comp', order=0, Fs=1):
     sides : String 
         representing the desired region of the frequency index to be returned. 
         Options are:
-        `comp` = `N` frequency indices between [-0.5, 0.5) are returned (default)
+        `full` = `N` frequency indices between [-0.5, 0.5) are returned (default)
         `pos`  = `(N+1)//2` frequency indices between [0, 0.5) are returned
         `neg`  = `N//2` frequency indices between [-0.5, 0) are returned.
         `both` =  a tuple (neg_freq_indices, pos_freq_indices) is returned. The returned vectors may be 
                   combined using `np.hstack((fn, fp))`, for example.
     order : Integer 
-        determines the way the frequency indices are arranged when `sides=comp`
+        determines the way the frequency indices are arranged when `sides=full`
          0 = DC, pos_frequencyIndices, neg_frequencyIndices
          1 = neg_frequencyIndices, DC, pos_frequencyIndices
     Fs : Float
@@ -77,7 +77,7 @@ def fft_freq_bin(N, sides='comp', order=0, Fs=1):
         fc = fp*Fs
     elif sides == 'neg':
         fc = fn*Fs
-    else: # 'comp'
+    else: # 'full'
         if order:
             fc = _np.hstack((fn, fp))*Fs
         else:

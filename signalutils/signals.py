@@ -6,7 +6,7 @@
 # Author:        Indranil Sinharoy
 #
 # Created:       09/22/2012
-# Last Modified: 10/15/2013
+# Last Modified: 12/31/2013
 # Copyright:     (c) Indranil Sinharoy 2012, 2013
 # Licence:       MIT License
 #-------------------------------------------------------------------------------
@@ -296,6 +296,42 @@ def _jinc2(x):
             for j in range(N):
                 result[i,j] = _sps.j1(x[i,j])/(x[i,j])
     return result
+    
+def dirichlet(x, n):
+    """Returns the Dirichlet or periodic sinc function.
+    
+    Parameters
+    ----------
+    x : ndarray
+        an ndarray of input elements
+    n : non-zero integer
+    
+    Returns
+    -------
+    d : ndarray
+        `d`, having shape as `x`, is the Dirichlet function of `x`
+        
+    Note
+    ----
+    The Dirichlet function is defined as:
+    $$
+    D(x) = \left \{ \begin{array}{cc}
+    \frac{sin(N x/2)}{N sin(x/2)}   & x \neq 2\pi k, \; k=0, \pm 1, \pm 2, \pm 3, \dots \\
+    (-1)^{k(N-1)}   & x = 2\pi k, \; k=0, \pm 1, \pm 2, \pm 3, \dots
+    \end{array}\right .\
+    $$
+    
+    This function has period 2\pi for n odd and period 4\pi for n even. Its peak value is 1, 
+    and its minimum value is -1 for n even. The magnitude of this function is (1/n) times the 
+    magnitude of the discrete-time Fourier transform of the n-point rectangular window.
+    """
+    d = _np.zeros(x.shape, dtype=x.dtype)
+    k = x//(2*_np.pi)
+    mask_c2 = x/(2*_np.pi) - k == 0
+    mask_c1 = _np.logical_not(mask_c2)
+    d[mask_c1] = _np.sin(0.5*n*x[mask_c1])/(n*_np.sin(0.5*x[mask_c1]))
+    d[mask_c2] = (-1.0)**(k[mask_c2]*(n-1))
+    return d
 
 # ---------------------------
 #   TEST FUNCTIONS
@@ -391,6 +427,10 @@ def _timingtest_jinc():
     print(result1[0:5,0:5])
     print(result2[0:5,0:5])
     print("timingtest_jinc completed")
+    
+def _test_dirichlet():
+    pass
+    # TODO !!!
 
 if __name__ == '__main__':
     import time
