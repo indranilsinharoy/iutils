@@ -25,7 +25,7 @@ def fft_freq_bin(N, sides='full', order=0, Fs=1):
     
     Parameters
     ----------
-    N : Integer 
+    N : Integer
         number of samples used to generate the indices for -0.5*Fs <= f*Fs < 0.5*Fs .  
     sides : String 
         representing the desired region of the frequency index to be returned. 
@@ -40,7 +40,7 @@ def fft_freq_bin(N, sides='full', order=0, Fs=1):
          0 = DC, pos_frequencyIndices, neg_frequencyIndices
          1 = neg_frequencyIndices, DC, pos_frequencyIndices
     Fs : Float
-    Sampling frequency (or 1/sample_spacing) its unit being samples/cycle
+        Sampling frequency (or 1/sample_spacing) its unit being samples/cycle
     
     Returns
     -------

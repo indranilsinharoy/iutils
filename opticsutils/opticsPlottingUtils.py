@@ -76,8 +76,8 @@ def intensityPSF_BlRd(N=1000):
     """Return cool to warm colormap based matplotlib colormap optimized for showing intensity PSF
     
     This colormap is a diverging colormap based on "Diverging Maps for Scientific Visualization," 
-    by K Moreland; however it has more color distribution near zero and some values have been 
-    modified.
+    by K Moreland; however it has more color distribution near zero by compressing the blue end
+    of the scale.
     
     Parameters
     ----------
