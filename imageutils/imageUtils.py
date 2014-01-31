@@ -5,8 +5,8 @@
 # Author:        Indranil Sinharoy
 #
 # Created:       29/08/2012
-# Last Modified:
-# Copyright:     (c) Indranil Sinharoy 2012, 2013
+# Last Modified: 28/01/2014
+# Copyright:     (c) Indranil Sinharoy 2012, 2013, 2014
 # Licence:       MIT License
 #-------------------------------------------------------------------------------
 import os
@@ -28,18 +28,27 @@ def cv2mpl(im):
     nm[:,:,2] = im[:,:,0]
     return nm
 
-def get_imlist(_path,_type='JPEG'):
+def get_imlist(file_path, image_type='JPEG'):
     """Returns a list of filenames for all images of specified type in a directory
-       _path: full path name of the directory to be searched
-       _type: type of images to be searched, options are -- JPEG, TIFF, PNG
-       
+
+    Parameters
+    ---------- 
+    file_path : string
+        full path name of the directory to be searched
+    image_type : string ('JPEG', 'TIFF', 'PNG')
+        type of images to be searched, options are -- JPEG, TIFF, PNG
+    
+    Returns
+    -------
+    image_files : list of strings
+        list of image filenames with full path.    
     """
     ext = '.jpg'
-    if _type == 'TIFF':
+    if image_type == 'TIFF':
         ext = '.tiff'
-    elif _type == 'PNG':
+    elif image_type == 'PNG':
         ext = '.png'
-    return [os.path.join(_path,f) for f in os.listdir(_path) if f.endswith(ext)]
+    return [os.path.join(file_path,f) for f in os.listdir(file_path) if f.endswith(ext)]
 
 """
 #Alternative get_imlist using glob module
@@ -48,31 +57,54 @@ def alt_get_imlist(pat):
     return[os.path.join(pat,f) for f in glob.glob("*.jpg")]
 """
    
-def imresize(im,sz):
+def imresize(im, sz):
     """Resize an image array using PIL"""
     pil_im = Image.fromarray(np.uint8(im))
     return np.array(pil_im.resize(sz))
 
 
-def histeq(im,nbr_bins=256):
-    """Histogram equalization of a grayscale image. The input "im" is a Numpy array 
-       (This is the implementation from Programming Computer Vision using Python, 
-        by J.E. Solem)"""
-       
+def histeq(im, nbr_bins=256):
+    """Histogram equalization of a grayscale image.
+    
+    Parameters
+    ----------
+    im : ndarray (ndim=2)
+        image array
+    nbr_bins : int
+        number of bins
+    
+    Returns
+    -------
+    image : ndarray
+        histogram equalized image
+    cdf : 
+    
+    Note
+    ----    
+    This is the implementation from Programming Computer Vision using Python, by J.E. Solem
+    """
     #get image histogram
     imhist, bins = np.histogram(im.flatten(),nbr_bins,density=True) #returns normalized pdf
-    cdf = imhist.cumsum()  # cumulative distribution function
+    cdf = imhist.cumsum()      # cumulative distribution function
     cdf = 255.0*cdf / cdf[-1]  # normalize
     
     #use linear interpolation of cdf to find new pixel values
-    im2 = np.interp(im.flatten(),bins[:-1],cdf)
+    im2 = np.interp(im.flatten(), bins[:-1], cdf)
     
-    return im2.reshape(im.shape),cdf
+    return im2.reshape(im.shape), cdf
     
 def compute_average(imlist):
     """Compute the average of a list of images
-       (This is the implementation from Programming Computer Vision using Python, 
-        by J.E. Solem)"""
+       
+    Parameters
+    ---------
+    imlist : list
+        list of image files
+    
+    Note
+    ----
+    This is the implementation from Programming Computer Vision using Python, by J.E. Solem
+    """
     #Open first image and make into array of type float
     averageim = np.array(Image.open(imlist[0]),'f')
     divisor = 1.0
@@ -88,16 +120,16 @@ def compute_average(imlist):
     #return average as uint8
     return np.array(averageim,'uint8')
     
-def myimshow(image,_bGray=False,_fig=None, _axes=None,_subplot=None,_xlabel=None,_ylabel=None):
+def myimshow(image, bGray=False, fig=None, axes=None, subplot=None, xlabel=None, ylabel=None):
     """My own redimentary image display routine"""
-    if (_subplot == None):
-        _subplot = int(111)        
-    if(_fig==None): #Open a figure window
-        _fig = plt.figure()
-        _axes = _fig.add_subplot(_subplot)
-    elif(_axes==None):
-        _axes = _fig.add_subplot(_subplot)
-    if(_bGray==True):
+    if (subplot == None):
+        subplot = int(111)        
+    if(fig==None): #Open a figure window
+        fig = plt.figure()
+        axes = fig.add_subplot(subplot)
+    elif(axes==None):
+        axes = fig.add_subplot(subplot)
+    if(bGray==True):
         plt.gray()
         print '\ngray'
     #plot the image
@@ -106,17 +138,17 @@ def myimshow(image,_bGray=False,_fig=None, _axes=None,_subplot=None,_xlabel=None
     pix_height = image.shape[0]
     pix_width = image.shape[1]
     #Set the xlim and ylim to constrain the plot
-    _axes.set_xlim(0,pix_width-1)
-    _axes.set_ylim(pix_height-1,0)
+    axes.set_xlim(0,pix_width-1)
+    axes.set_ylim(pix_height-1,0)
     #Set the xlabel and ylable if provided
-    if(_xlabel != None):
-        _axes.set_xlabel(_xlabel)
-    if(_ylabel != None):
-        _axes.set_ylabel(_ylabel)
+    if(xlabel != None):
+        axes.set_xlabel(xlabel)
+    if(ylabel != None):
+        axes.set_ylabel(ylabel)
     #Make the ticks to empty list
-    _axes.get_xaxis().set_ticks([])
-    _axes.get_yaxis().set_ticks([])
-    return imPtHandle,_fig,_axes
+    axes.get_xaxis().set_ticks([])
+    axes.get_yaxis().set_ticks([])
+    return imPtHandle, fig, axes
                     
     
     

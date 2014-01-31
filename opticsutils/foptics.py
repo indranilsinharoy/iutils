@@ -15,19 +15,133 @@ import numpy as np
 from iutils.signalutils.signals import jinc as _jinc
 
 
-def fresnelNumber(radius, wavelength, focal_length):
-    """Returns the Fresnel Number based on the optical system parameters
+def fresnelNumber(aperture_r, observ_plane_dist, wave_length=550e-6):
+    """calculate the fresnel number, assuming circular aperture
     
     Parameters
     ----------
-    radius : Float
-         radius of the circular aperture
-    wavelength : Float
-        wavelength of illumination (in the same units as that of `radius`)
-    focal_length : Float
-        focal length of the lens in the same units as that of `radius`)
+    aperture_r : float
+        The radius of the aperture in units of length (usually mm)
+    observ_plane_dist : float
+        The distance of the observation plane from the aperture. This is equal to the focal length of the lens for infinite conjugate, or the image plane distance, in the same units of length as `aperture_r`
+    wave_length : float
+        The wavelength of light (default=550e-6, note that the default's unit is mm)
+    
+    Returns
+    -------
+    fresnel_number : float
+    
+    Note
+    ----
+    1. From the Huygens-Fresnel principle perspective, the Fresnel number represents the number of Fresnel zones in the aperture opening [Principles of Optics, Born and Wolf, 2011]
     """
-    return (radius**2.0)/(wavelength*focal_length)
+    return (aperture_r**2.0)/(wave_length*observ_plane_dist)
+    
+def dlSpotSize(aperture_r, zi, wave_length=550e-6):
+    """calculate the diffraction limited spot size, assuming circular aperture
+    
+    Parameters
+    ----------
+    aperture_r : float
+        The radius of the aperture in units of length (usually mm)
+    zi : float
+        Image distance (or the distance of the observation plane) in the same units of length as `aperture_r`. For objects at infinity, `zi` is the focal length of the lens.
+    wave_length : float
+        The wavelength of light (default=550e-6, note that the default's unit is mm)
+    
+    Returns
+    -------
+    spot_size : float
+        The diffraction limited spot size given as 2.44*lamda*f/#
+    """
+    return 1.22*wave_length*(zi/aperture_r)
+    
+def defocus(w020, aperture_r, zi):
+    """Return the amount focus shift or defocus, delta_z 
+    
+    Parameters
+    ----------
+    w020 : float
+        Wavefront error coefficient for defocus. w020 is the maximum wavefront error measured at the edge of the pupil.
+    aperture_r : float
+        The radius of the aperture in units of length (usually mm)
+    zi : float
+        Image distance (or the distance of the observation plane) in the same units of length as `aperture_r`. For objects at infinity, `zi` is the focal length of the lens.  
+    
+    Returns
+    -------
+    delta_z : float
+        The amount of defocus along the optical axis corresponding to the given wavefront error.
+        
+    Note
+    ----    
+    The relation between the wavefront error and the defocus as derived using paraxial assumption and scalar diffraction theory. It is given as:
+    
+    `W020 = (delta_z*a^2)/(2*zi(zi + delta_z))` 
+    
+    which may also be approximated as `W020 = delta_z/8N^2`, where `N` is the f-number.
+    
+    See also w020FromDefocus().
+    """
+    return (2.0*zi**2*w020)/(aperture_r**2 - 2.0*zi*w020)
+
+def w020FromDefocus(aperture_r, zi, delta_z, wave_length=1.0):
+    """Return the maximum wavefront error corresponding to defocus amount `delta_z`  
+    
+    Parameters
+    ----------
+    aperture_r : float
+        The radius of the aperture in units of length (usually mm)
+    zi : float
+        Image distance (or the distance of the observation plane) in the same units of length as `aperture_r`. For objects at infinity, `zi` is the focal length of the lens.
+    delta_z : float
+        The amount of defocus/focus-shift along the optical axis.
+    wave_length : float
+        The `wave_length` is used to specify a wave length if the coefficient w020 needs to be 'relative to the wavelength'
+    
+    Returns
+    -------
+    w020 : float
+        Wavefront error coefficient for defocus. w020 is the maximum wavefront error, which is measured at the edge of the pupil.
+        
+    Note
+    ----    
+    The relation between the wavefront error and the defocus as derived using paraxial assumption and scalar diffraction theory. It is given as:
+    
+    `W020 = (delta_z*a^2)/(2*zi(zi + delta_z))` 
+    
+    which may also be approximated as `W020 = delta_z/8N^2`, where `N` is the f-number.
+    
+    See also defocus().
+    """
+    w020 = (delta_z*aperture_r**2)/(2.0*zi*(zi + delta_z))
+    return w020/wave_length
+
+
+def depthOfFocus(f_number, wave_length=550e-6, first_zero=False):
+    """Return the diffraction limited one-sided depth of focus, delta_z, in the image space.
+    
+    The total DOF is twice the returned value assuming symmetric intensity distribution about the point fo focus.
+    
+    Parameters
+    ----------
+    f_number: float
+        Effective F-number of the system, given by `f/D` for infinite conjugate imaging, and `zi/D` for finite conjugate imaging. Where `f` is the focal length, `zi` is the gaussian image distance, `D` is the entrance pupil diameter.
+    wave_length : float
+        The wavelength of light (default=550e-6, note that the default's unit is mm)
+    first_zero : boolean
+        Normally the DOF is the region between the focal point (max intensity) on the axis and a point along the axis where the intensity has fallen upto 20% of the max. This is the region returned by default by this function. If `first_zero` is True, then the (half-) region returned is from the max intensity to the first zero along the axis.
+        
+    Return
+    ------
+    delta_z : float
+        One-sided depth of focus (in the image space) in the units of the wave_length. The total DOF is twice the returned value assuming symmetric intensity distribution about the point fo focus.
+    """
+    if first_zero:
+        delta_z = 8.0*wave_length*f_number**2
+    else:
+        delta_z = (6.4*wave_length*f_number**2)/np.pi
+    return delta_z
 
 def airyPattern(lamda, radius, zxp, rho, normalization=1):
     """Returns the Fraunhoffer intensity diffraction pattern for a circular aperture.
