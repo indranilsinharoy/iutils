@@ -6,13 +6,14 @@
 # Author:        Indranil Sinharoy
 #
 # Created:       09/22/2012
-# Last Modified: 04/10/2013
+# Last Modified: 02/07/2014
 # Copyright:     (c) Indranil Sinharoy 2012, 2013
 # Licence:       MIT License
 #-------------------------------------------------------------------------------
 from __future__ import division, print_function
 import numpy as np
 from iutils.signalutils.signals import jinc as _jinc
+
 
 
 def fresnelNumber(aperture_r, observ_plane_dist, wave_length=550e-6):
@@ -56,6 +57,143 @@ def dlSpotSize(aperture_r, zi, wave_length=550e-6):
     """
     return 1.22*wave_length*(zi/aperture_r)
     
+def airyPattern(lamda, radius, zxp, rho, normalization=1):
+    """Returns the Fraunhoffer intensity diffraction pattern for a circular aperture.
+    This is also known as the Airy pattern.
+    
+    Parameters
+    ---------
+    lamda : Float 
+        wavelength in physical units (same units that of `radius`, `zxp`, `rho`)
+    radius : Float
+        radius of the aperture
+    zxp : Float 
+        distance to the screen/image plane from the aperture/Exit pupil
+    rho : ndarray
+        radial coordinate in the screen/image plane (such as constructed using `meshgrid`)
+    normalization : Integer (0 or 1 or 2)
+        0 = None; 1 = Peak value is 1.0 (default); 2 = Sum of the area under PSF = 1.0   
+    
+    Returns
+    -------
+    pattern : ndarray
+        Fraunhoffer diffraction pattern (Airy pattern)
+    """
+    # The jinc() function used here is defined as jinc(x) = J_1(x)/x, jinc(0) = 0.5
+    pattern = ((np.pi*radius**2/(lamda*zxp))*2*_jinc(2*np.pi*radius*rho/(lamda*zxp), normalize=False))**2
+    if normalization==1:
+        pattern = pattern/np.max(pattern)
+    elif normalization==2:
+        pattern = pattern/np.sum(pattern)
+    return pattern
+    
+def depthOfFocus(f_number_eff, wavelength=550e-6, first_zero=False, full=False):
+    """Return the half diffractive optical focus depth, `delta_z`, in the image space.
+    
+    The total DOF is twice the returned value assuming symmetric intensity distribution about the point fo focus.
+    
+    Parameters
+    ----------
+    f_number_eff: float
+        Effective F-number of the system, given by `f/D` for infinite conjugate imaging, and `zi/D` for finite conjugate imaging. Where `f` is the focal length, `zi` is the gaussian image distance, `D` is the entrance pupil diameter.
+    wavelength : float
+        The wavelength of light (default=550e-6, note that the default's unit is mm)
+    first_zero : boolean
+        Normally the DOF is the region between the focal point (max intensity) on the axis and a point along the axis where the intensity has fallen upto 20% of the max [Born and Wolf, Page 491, Handbook of Optical Systems. Aberration Theory, Vol-3, Gross, Page 126]. This is the region returned by default by this function. If `first_zero` is True, then the (half-) region returned is from the max intensity to the first zero along the axis.
+        
+    Return
+    ------
+    delta_z : float
+        One-sided depth of focus (in the image space) in the units of the `wavelength`. The total DOF is twice the returned value assuming symmetric intensity distribution about the point fo focus.
+    """
+    if first_zero:
+        delta_z = 8.0*wavelength*f_number_eff**2
+    else:
+        delta_z = (6.4*wavelength*f_number_eff**2)/np.pi
+    if full:
+        delta_z = delta_z*2.0
+    return delta_z
+
+
+def depthOfField(focal_length, f_number, obj_dist, wavelength=550e-6, first_zero=False):
+    """Returns the diffraction based depth of field in the object space
+
+    Parameters
+    ----------
+    focal_length : float
+        Focal length of the lens in the length units (usually in mm)
+    f_number: float
+        F-number of the system, given by `f/D`, where `f` is the focal length, and `D` is the pupil diameter. It is not the effective f-number, as the effective f-number is calculated within the function based on the `focal_length` and the `obj_dist`.
+    obj_dist : float
+        Distance of the object plane from the lens in the same units as `focal_length`
+    wavelength : float
+        The wavelength of light in the same units of `focal_length` (default=550e-6, note that the default's unit is mm)
+    first_zero : boolean
+        Normally the DOF in the image space is the region between the focal point (max intensity) on the axis and a point along the axis where the intensity has fallen upto 20% of the max [Born and Wolf, Page 491, Handbook of Optical Systems. Aberration Theory, Vol-3, Gross, Page 126]. This is the region returned by this function in the default mode. If `first_zero` is `True`, then the region returned is from the max intensity to the first zeros along the axis on either side of the optical axis.
+        
+    Returns
+    -------
+    The function returns a 3-tuple of the following elements:
+
+    dof_t : float
+        total DOF range     
+    dof_ext_f : float
+        far extent of the plane in acceptable focus (criterion set by the state of `first_zero`)
+    dof_ext_n : float
+        near extent of the plane in acceptable focus
+    """
+    img_dist = obj_dist*focal_length/(obj_dist - focal_length) # geometric image point
+    f_num_eff = (img_dist/focal_length)*f_number
+    delta_z = depthOfFocus(f_num_eff, wavelength, first_zero)   # half diffraction DOF
+    # far (w.r.t. lens) extent of the plane in acceptable focus    
+    dof_ext_f =  (img_dist - delta_z)*focal_length/((img_dist - delta_z) - focal_length)
+    # near (w.r.t. lens) extent of the plane in acceptable focus    
+    dof_ext_n =  (img_dist + delta_z)*focal_length/((img_dist + delta_z) - focal_length)
+    # total DOF extent    
+    dof_t = dof_ext_f - dof_ext_n
+    return dof_t, dof_ext_f, dof_ext_n
+
+
+def geometricDepthOfField(focal_length, f_number, obj_dist, coc, grossExpr=False):
+    """Returns the geometric depth of field value
+    
+    Parameters
+    ----------
+    focal_length : float 
+        focal length in length units (usually in mm)
+    f_number : float
+        F/# of the optical system
+    obj_dist : float
+        distance of the object from the lens in focus in the same unit as `f`
+    coc : float
+        circle of confusion in the same length-unit as `f`
+    grossExpr : boolean
+        whether or not to use the expression from Gross' Handbook of Optical systems (see the notes). This is an approximation.
+    
+    Returns
+    -------
+    dof : float 
+        length of the total depth of field zone in the same unit as `f`
+    
+    Notes
+    -----
+    The expression for the geometric depth of field is given as:
+    
+    $DOF_{\text{geom}} = \frac{2 f^2 N c u^2 }{f^4 - N^2 c^2 u^2 }$
+    
+    The expression for the geometric depth of filed using Gross Expression, which is derived from the expression given in 30.8 of Handbook of Optical Systems, vol 3, Gross is as follows:
+    $DOF_{\text{geom}} = \frac{2 c N (u - f)^2}{f^2}$
+    """
+    if grossExpr:
+        dof = (2.0*coc*f_number*(obj_dist-focal_length)**2)/focal_length**2
+    else:
+        dof = (2.0*focal_length**2*f_number*coc*obj_dist**2)/(focal_length**4 - (f_number*coc*obj_dist)**2)
+    return dof
+
+#----------------------------------
+# Aberration calculation functions
+#----------------------------------
+
 def defocus(w020, aperture_r, zi):
     """Return the amount focus shift or defocus, delta_z 
     
@@ -93,9 +231,9 @@ def w020FromDefocus(aperture_r, zi, delta_z, wave_length=1.0):
     aperture_r : float
         The radius of the aperture in units of length (usually mm)
     zi : float
-        Image distance (or the distance of the observation plane) in the same units of length as `aperture_r`. For objects at infinity, `zi` is the focal length of the lens.
+        Image distance (or the distance of the observation plane) in the same units of length as `aperture_r`. For objects at infinity, `zi` is the focal length of the lens. 
     delta_z : float
-        The amount of defocus/focus-shift along the optical axis.
+        The amount of defocus/focus-shift along the optical axis. Generally `delta_z = z_a - zi` where `z_a` is the point of convergence of the actual/aberrated wavefront on the optical axis.
     wave_length : float
         The `wave_length` is used to specify a wave length if the coefficient w020 needs to be 'relative to the wavelength'
     
@@ -117,61 +255,47 @@ def w020FromDefocus(aperture_r, zi, delta_z, wave_length=1.0):
     w020 = (delta_z*aperture_r**2)/(2.0*zi*(zi + delta_z))
     return w020/wave_length
 
-
-def depthOfFocus(f_number, wave_length=550e-6, first_zero=False):
-    """Return the diffraction limited one-sided depth of focus, delta_z, in the image space.
-    
-    The total DOF is twice the returned value assuming symmetric intensity distribution about the point fo focus.
+def seidel_5(u0, v0, X, Y, wd=0, w040=0, w131=0, w222=0, w220=0, w311=0):
+    """Computer wavefront OPD for first 5 Seidel wavefront aberration coefficients plus defocus.
     
     Parameters
     ----------
-    f_number: float
-        Effective F-number of the system, given by `f/D` for infinite conjugate imaging, and `zi/D` for finite conjugate imaging. Where `f` is the focal length, `zi` is the gaussian image distance, `D` is the entrance pupil diameter.
-    wave_length : float
-        The wavelength of light (default=550e-6, note that the default's unit is mm)
-    first_zero : boolean
-        Normally the DOF is the region between the focal point (max intensity) on the axis and a point along the axis where the intensity has fallen upto 20% of the max. This is the region returned by default by this function. If `first_zero` is True, then the (half-) region returned is from the max intensity to the first zero along the axis.
+    u0, v0 : float
+        normalized image plane coordinate along the u-axis and v-axis respectively
+    X, Y : ndarray
+        normalized pupil coordinate array (usually from meshgrid)
+    wd, w040, w131, w222, w220, w311  : float
+        defocus, spherical, coma, astigmatism, field-curvature, distortion aberration coefficients
         
-    Return
-    ------
-    delta_z : float
-        One-sided depth of focus (in the image space) in the units of the wave_length. The total DOF is twice the returned value assuming symmetric intensity distribution about the point fo focus.
-    """
-    if first_zero:
-        delta_z = 8.0*wave_length*f_number**2
-    else:
-        delta_z = (6.4*wave_length*f_number**2)/np.pi
-    return delta_z
-
-def airyPattern(lamda, radius, zxp, rho, normalization=1):
-    """Returns the Fraunhoffer intensity diffraction pattern for a circular aperture.
-    This is also known as the Airy pattern.
-    
-    Parameters
-    ---------
-    lamda : Float 
-        wavelength in physical units (same units that of `radius`, `zxp`, `rho`)
-    radius : Float
-        radius of the aperture
-    zxp : Float 
-        distance to the screen/image plane from the aperture/Exit pupil
-    rho : ndarray
-        radial coordinate in the screen/image plane (such as constructed using `meshgrid`)
-    normalization : Integer (0 or 1 or 2)
-        0 = None; 1 = Peak value is 1.0 (default); 2 = Sum of the area under PSF = 1.0   
-    
     Returns
     -------
-    pattern : ndarray
-        Fraunhoffer diffraction pattern (Airy pattern)
+    w : ndarray
+        wavefront OPD at the given image plane coordinate.
+        
+    Note
+    ----
+    This function is exactly implemented as is from 'Computational Fourier Optics', David Voelz
     """
-    # The jinc() function used here is defined as jinc(x) = J_1(x)/x, jinc(0) = 0.5
-    pattern = ((np.pi*radius**2/(lamda*zxp))*2*_jinc(2*np.pi*radius*rho/(lamda*zxp), normalize=False))**2
-    if normalization==1:
-        pattern = pattern/np.max(pattern)
-    elif normalization==2:
-        pattern = pattern/np.sum(pattern)
-    return pattern
+    theta = np.arctan2(v0, u0)       # image rotation angle
+    u0r = np.sqrt(u0**2 + v0**2)     # image height 
+    # rotate pupil grid
+    Xr = X*np.cos(theta) + Y*np.sin(theta)
+    Yr = -X*np.sin(theta) + Y*np.cos(theta)
+    rho2 = Xr**2 + Yr**2
+    w = (  wd*rho2         +    # defocus
+         w040*rho2**2      +    # spherical
+         w131*u0r*rho2*Xr  +    # coma
+         w222*u0r**2*Xr**2 +    # astigmatism
+         w220*u0r**2*rho2  +    # field curvature
+         w311*u0r**3*Xr     )   # distortion
+    return w
+    
+
+#-------------------------------------
+# Some ray optics helper functions
+#-------------------------------------
+# Don't move the following fuctions to another module ... these functions are also
+# useful for Fourier Optics calculations too, such as direction cosine calculations.
 
 def getDirCosinesFromZenithAndAzimuthAngles(zenith_angle, azimuth_angle, atype='deg'):
     """Returns the direction cosines cos_A, cos_B & cos_C
@@ -266,44 +390,7 @@ def get_alpha_beta_gamma_set(alpha=None, beta=None, gamma=None, force_zero='none
         if alpha:
             return alpha, f(alpha,0), 0.0
         else:
-            return f(beta, 0), beta, 0.0 
-
-def seidel_5(u0, v0, X, Y, wd=0, w040=0, w131=0, w222=0, w220=0, w311=0):
-    """Computer wavefront OPD for first 5 Seidel wavefront aberration coefficients plus defocus.
-    
-    Parameters
-    ----------
-    u0, v0 : float
-        normalized image plane coordinate along the u-axis and v-axis respectively
-    X, Y : ndarray
-        normalized pupil coordinate array (usually from meshgrid)
-    wd, w040, w131, w222, w220, w311  : float
-        defocus, spherical, coma, astigmatism, field-curvature, distortion aberration coefficients
-        
-    Returns
-    -------
-    w : ndarray
-        wavefront OPD at the given image plane coordinate.
-        
-    Note
-    ----
-    This function is exactly implemented as is from 'Computational Fourier Optics', David Voelz
-    """
-    theta = np.arctan2(v0, u0)       # image rotation angle
-    u0r = np.sqrt(u0**2 + v0**2)   # image height 
-    # rotate pupil grid
-    Xr = X*np.cos(theta) + Y*np.sin(theta)
-    Yr = -X*np.sin(theta) + Y*np.cos(theta)
-    rho2 = Xr**2 + Yr**2
-    w = (  wd*rho2         +    # defocus
-         w040*rho2**2      +    # spherical
-         w131*u0r*rho2*Xr  +    # coma
-         w222*u0r**2*Xr**2 +    # astigmatism
-         w220*u0r**2*rho2  +    # field curvature
-         w311*u0r**3*Xr     )   # distortion
-    return w
-    
-    
+            return f(beta, 0), beta, 0.0     
         
 
 # ---------------------------
@@ -373,9 +460,33 @@ def _test_get_alpha_beta_gamma_set():
 
 def _test_seidel_5():
     """Test seidel_5 function"""
-    # TO DO:    
+    #TODO!!!    
     pass
 
+def _test_dSpotSize():
+    #TODO!!!
+    pass
+
+def _test_w020FromDefocus():
+    #TODO!!!
+    pass
+
+def _test_depthOfFocus():
+    """Test depthOfFocus(), which returns the diffraction based DOF"""
+    wavelength = 500e-6  # mm  
+    fnumber = [2, 2.8, 4.0, 5.6, 8.0, 10, 11.0, 16.0, 22.0]
+    dz = [depthOfFocus(N, wavelength) for N in fnumber]
+    exp_array = np.array((0.004074366543152521, 0.00798575842457894, 0.016297466172610083, 0.03194303369831576, 0.06518986469044033, 0.10185916357881303, 0.12324958793036377, 0.2607594587617613, 0.49299835172145506))
+    nt.assert_array_almost_equal(np.array(dz), exp_array, decimal=6)
+    print("test_depthOfFocus() is successful")
+
+def _test_depthOfField():
+    #TODO!!!
+    pass
+
+def _test_geometricDepthOfField():
+    #TODO!!!
+    pass
 
 if __name__ == '__main__':
     import numpy.testing as nt
@@ -385,3 +496,4 @@ if __name__ == '__main__':
     _test_airyPattern()
     _test_getDirCosinesFromZenithAndAzimuthAngles()
     _test_get_alpha_beta_gamma_set()
+    _test_depthOfFocus()
