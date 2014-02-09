@@ -7,7 +7,7 @@
 #
 # Created:       09/22/2012
 # Last Modified: 02/07/2014
-# Copyright:     (c) Indranil Sinharoy 2012, 2013
+# Copyright:     (c) Indranil Sinharoy 2012, 2013, 2014
 # Licence:       MIT License
 #-------------------------------------------------------------------------------
 from __future__ import division, print_function
@@ -392,6 +392,12 @@ def get_alpha_beta_gamma_set(alpha=None, beta=None, gamma=None, force_zero='none
         else:
             return f(beta, 0), beta, 0.0     
         
+
+#--------------------------------
+# Miscellaneous helper functions
+#---------------------------------
+
+
 
 # ---------------------------
 #   TEST FUNCTIONS
