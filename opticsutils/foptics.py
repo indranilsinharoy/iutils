@@ -13,6 +13,7 @@
 from __future__ import division, print_function
 import numpy as np
 from iutils.signalutils.signals import jinc as _jinc
+import iutils.opticsutils.imager as imgr 
 
 
 
@@ -177,18 +178,11 @@ def geometricDepthOfField(focal_length, f_number, obj_dist, coc, grossExpr=False
     
     Notes
     -----
-    The expression for the geometric depth of field is given as:
-    
-    $DOF_{\text{geom}} = \frac{2 f^2 N c u^2 }{f^4 - N^2 c^2 u^2 }$
-    
-    The expression for the geometric depth of filed using Gross Expression, which is derived from the expression given in 30.8 of Handbook of Optical Systems, vol 3, Gross is as follows:
-    $DOF_{\text{geom}} = \frac{2 c N (u - f)^2}{f^2}$
+    This function is implemented in the module iutils.opticsutils.imager
     """
-    if grossExpr:
-        dof = (2.0*coc*f_number*(obj_dist-focal_length)**2)/focal_length**2
-    else:
-        dof = (2.0*focal_length**2*f_number*coc*obj_dist**2)/(focal_length**4 - (f_number*coc*obj_dist)**2)
-    return dof
+    gdof = imgr.geometricDepthOfField(focal_length, f_number, obj_dist, coc, grossExpr)
+    return gdof
+
 
 #----------------------------------
 # Aberration calculation functions

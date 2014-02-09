@@ -94,6 +94,47 @@ def lpmm2lpph(lpmm, N, pixel_pitch):
         resolution in terms of Line-Pair per Picture Height (LPPH)
     """
     return lpmm*N*pixel_pitch/1000.0
+    
+
+#---------------------------------------
+# Imaging functions
+#---------------------------------------
+def geometricDepthOfField(focal_length, f_number, obj_dist, coc, grossExpr=False):
+    """Returns the geometric depth of field value
+    
+    Parameters
+    ----------
+    focal_length : float 
+        focal length in length units (usually in mm)
+    f_number : float
+        F/# of the optical system
+    obj_dist : float
+        distance of the object from the lens in focus in the same unit as `f`
+    coc : float
+        circle of confusion in the same length-unit as `f`
+    grossExpr : boolean
+        whether or not to use the expression from Gross' Handbook of Optical systems (see the notes). This is an approximation.
+    
+    Returns
+    -------
+    dof : float 
+        length of the total depth of field zone in the same unit as `f`
+    
+    Notes
+    -----
+    The expression for the geometric depth of field is given as:
+    
+    DOF = 2*N*c*f^2*u^2/(f^4 - N^2*c^2*u^2
+    
+    The expression for the geometric depth of filed using Gross Expression, which is derived from the expression given in 30.8 of Handbook of Optical Systems, vol 3, Gross is as follows:
+    
+    DOF = 2*c*N*(u - f)^2/f^2
+    """
+    if grossExpr:
+        dof = (2.0*coc*f_number*(obj_dist-focal_length)**2)/focal_length**2
+    else:
+        dof = (2.0*focal_length**2*f_number*coc*obj_dist**2)/(focal_length**4 - (f_number*coc*obj_dist)**2)
+    return dof
 
 
 
