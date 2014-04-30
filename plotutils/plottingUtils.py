@@ -16,6 +16,9 @@ from __future__ import division
 import numpy as np
 from scipy import optimize
 from mayavi import mlab
+from mayavi.modules.scalar_cut_plane import ScalarCutPlane
+from mayavi.sources.builtin_surface import BuiltinSurface
+from mayavi.modules.surface import Surface
 import matplotlib.pyplot as plt
 
 
@@ -427,6 +430,160 @@ def find_zero_crossings(f, a, b, func_args=(), n=100):
     for j in range(1,len(sign_change_arr)):
         zero_crossings.append(optimize.brentq(f, sign_change_arr[j-1], sign_change_arr[j], args=func_args))
     return zero_crossings
+
+
+
+def drawScalarCutPlane(planeNorm=(0,0,0), planeOri=(0,0,0), filterNorm=None, tubing=False, viewControls=True, engine=None, scene=None):
+    """Draws scalar cut plane in a Mayavi figure
+    
+    Parameters
+    ----------
+    planeNorm : 3-tuple
+        Normal vector to the scalar cut plane
+    planeOri : 3-tuple
+        The coordinates in world coordinates where the plane should be placed
+    filterNorm : 3-tuple
+        ?? (default is `None`) if `None` then this is assigned to the `planeNorm`
+    tubing : boolean
+        Whether or not to put a tube surrounding the plane. Default is `False` i.e. no tubing
+    viewControls: boolean
+        Enable (if True, which is default behavior) or disable GUI based control of the cut-plane
+    engine : Mayavi Engine
+        Default = None
+    scene : Mayavi scene object
+        Default = None
+        
+    Returns
+    -------
+    scp : scalar cut plane object
+    
+    See also `drawScalarCutPlaneUsingPipeline`
+    """
+    if not engine:
+        engine = mlab.get_engine()
+    if not scene:
+        scene = engine.scenes[0]
+    scp = ScalarCutPlane()
+    engine.add_module(scp)
+    scp.implicit_plane.widget.origin = planeOri
+    scp.implicit_plane.normal = planeNorm
+    if filterNorm:
+        scp.warp_scalar.filter.normal = filterNorm
+    else:
+        scp.warp_scalar.filter.normal =  planeNorm  # I'm currently not sure what it does ... it generally follows the normal
+    scp.implicit_plane.widget.enabled = viewControls
+    if viewControls:
+        scp.implicit_plane.widget.tubing = tubing
+    return scp
+    
+def drawScalarCutPlaneUsingPipeline(src, planeNorm=(0,0,0), planeOri=(0,0,0), filterNorm=None, tubing=False, viewControls=True):
+    """Draws scalar cut plane using the Mayavi Pipeline
+    
+    Parameters
+    ----------
+    src : data source (Mayavi source, or VTK dataset)
+        For example, `src` could be scalar field data - `src = mlab.pipeline.scalar_field(x,y,z,s)`
+    planeNorm : 3-tuple
+        Normal vector to the scalar cut plane
+    planeOri : 3-tuple
+        The coordinates in world coordinates where the plane should be placed
+    filterNorm : 3-tuple
+        ?? (default is `None`) if `None` then this is assigned to the `planeNorm`
+    tubing : boolean
+        Whether or not to put a tube surrounding the plane. Default is `False` i.e. no tubing
+    viewControls: boolean
+        Enable (if True, which is default behavior) or disable GUI based control of the cut-plane
+    
+    Returns
+    -------
+    scp : scalar cut plane object
+    """
+    scp = mlab.pipeline.scalar_cut_plane(src)
+    scp.implicit_plane.widget.origin = planeOri
+    scp.implicit_plane.normal = planeNorm
+    if filterNorm:
+        scp.warp_scalar.filter.normal = filterNorm
+    else:
+        scp.warp_scalar.filter.normal =  planeNorm  # I'm currently not sure what it does ... it generally follows the normal
+    scp.implicit_plane.widget.enabled = viewControls
+    if viewControls:
+        scp.implicit_plane.widget.tubing = tubing
+    return scp
+
+def mayaviBuiltinPlane(len_x=1.0, len_y=1.0, loc=(0.0,0.0,0.0), normal=(0.0,0.0,1.0), 
+                       planeCol=(1.0,1.0,1.0), planeOpa=0.8, planeLighting=False,                      
+                       drawNormal=True, normVecScale=1.0, engine=None, scene=None):
+    """Function to draw Mayavi builtin plane surface 
+    
+    The function assumes that a figure has already been drawn and a scene is present. 
+    
+    Parameters
+    ----------
+    len_x : float
+        side length of the plane along x axis (normally horizontal/width)
+    len_y : float
+        side length of the plane along y axis (normally vertical/height)
+    loc : 3-tuple of floats
+        (x,y,z) coordinates of the centroid of the plane in the world-coordinates
+    normal : 3-tuple of floats
+        (nx, ny, nz) normal vector of the plane surface
+    planeCol : 3-tuple of floats (values between 0 and 1)
+        Color of the plane
+    planeOpa : float (between 0 and 1)
+        opacity property of the plane
+    planeLighting : boolean
+        whether or not to use lighting on the plane (default is False)
+    drawNormal : boolean
+        whether or not to draw the plane normal
+    normVecScale : float
+        scale factor of the normal vector if drawn (default=1)
+    engine : mayavi engine
+        optional
+    scene : mayavi scene
+        optional
+        
+    Note: If the engine and the scene is not passed explicitly, it will grab the current engine and the first scene of that engine.
+
+    Returns
+    -------
+    if `drawNormal` is `True` : 2-tuple (plane_surface, normal_vector)
+    if `drawNormal` is `False` : plane_surface     
+    """
+    if not engine:
+        engine = mlab.get_engine()
+    if not scene:
+        scene = engine.scenes[0]
+    # ensure the normal vector is of length 1
+    nvl = np.sqrt(normal[0]**2 + normal[1]**2 + normal[2]**2)
+    if nvl != 1.00:
+        normal = normal[0]/nvl, normal[1]/nvl, normal[2]/nvl
+    plane_surf = BuiltinSurface()
+    engine.add_source(plane_surf)
+    plane_surf.source = 'plane'
+    #plane_surf.data_source.center = np.array(loc)
+    origin = loc[0] - len_x/2.0, loc[1] - len_y/2.0, 0.0 
+    point1 = origin[0] + len_x, origin[1], 0.0
+    point2 = origin[0], origin[1] + len_y, 0.0
+    plane_surf.data_source.origin = np.array(origin)
+    plane_surf.data_source.point1 = np.array(point1)
+    plane_surf.data_source.point2 = np.array(point2)
+    plane_surf.data_source.center = np.array(loc) # this needs to be set here
+    plane_surf.data_source.normal = np.array(normal)
+    surface = Surface()
+    engine.add_filter(surface, plane_surf)
+    # Add color and opacity and lighting properties
+    surface.actor.property.color = planeCol
+    surface.actor.property.opacity = planeOpa
+    surface.actor.property.lighting = planeLighting
+    if drawNormal:        # Draw plane normal
+        norm_drawn = mlab.quiver3d(loc[0], loc[1], loc[2], 
+                                 [normal[0]], [normal[1]], [normal[2]],  # required to do this way for matching shape ... else Mayavi will throw error. This may also be related to the issue -- https://github.com/enthought/mayavi/issues/85
+                                 mode='arrow', resolution=16, color=(1,0,0), 
+                                 scale_factor=normVecScale, opacity=1.0)
+        return plane_surf, norm_drawn
+    else:
+        return plane_surf
+    
 
 # ------------------------------------------------------------------------
 #           TESTING FUNCTIONS

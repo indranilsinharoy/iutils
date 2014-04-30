@@ -28,7 +28,7 @@ def rotMat2D(angle, angleType='r'):
         R : (numpy matrix) the rotation matrix
 
     Notes
-    --------
+    ------
     The rotation matrix R rotates points in the xy-Cartesian plane
     counterclockwise through an angle \theta about the origin of the Cartesian
     coordinate system. To perform the rotation using a rotation matrix R, the
@@ -43,15 +43,20 @@ def rotMat2D(angle, angleType='r'):
 
     return R
 
-def rotMat3D(axis, angle, angleType='r'):
+def rotMat3D(axis, angle, angleType='r', tol=1e-12):
     """Return the rotation matrix for 3D rotation by angle `angle` and about an
     arbitrary axis `axis`.
 
     Parameters
     ----------
-    axis    : 3-tuple (x, y, z) represent the arbitrary axis about which to rotate
-    angle   : the rotation angle.
-    angleType : the unit of the rotation angle. `r` = radian (default), `d` = degree.
+    axis : 3-tuple 
+        (x, y, z) represent the arbitrary axis about which to rotate
+    angle : float
+        the rotation angle.
+    angleType : string
+        the unit of the rotation angle. `r` = radian (default), `d` = degree.
+    tol : float (default=1e-12)
+        set values below absolute of `tol` to zero
 
     Returns
     ------
@@ -70,6 +75,7 @@ def rotMat3D(axis, angle, angleType='r'):
     R = (np.cos(t))*np.eye(3) +\
     (1-np.cos(t))*np.matrix(((x**2,x*y,x*z),(x*y,y**2,y*z),(z*x,z*y,z**2))) + \
     np.sin(t)*np.matrix(((0,-z,y),(z,0,-x),(-y,x,0)))
+    R[np.abs(R)<tol]=0.0
     return R
 
 

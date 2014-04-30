@@ -291,7 +291,7 @@ def seidel_5(u0, v0, X, Y, wd=0, w040=0, w131=0, w222=0, w220=0, w311=0):
 # Don't move the following fuctions to another module ... these functions are also
 # useful for Fourier Optics calculations too, such as direction cosine calculations.
 
-def getDirCosinesFromZenithAndAzimuthAngles(zenith_angle, azimuth_angle, atype='deg'):
+def getDirCosinesFromZenithAndAzimuthAngles(zenith_angle, azimuth_angle, atype='deg', tol=1e-12):
     """Returns the direction cosines cos_A, cos_B & cos_C
     of the direction vector described by zenith and azimuth angles
 
@@ -303,6 +303,8 @@ def getDirCosinesFromZenithAndAzimuthAngles(zenith_angle, azimuth_angle, atype='
         Angle of the direction vector with respect to the positive x-axis. 0 <= azimuth_angle <= 360 degrees
     atype : String ('rad' or 'deg')
         Angle unit in degree (default) or radians
+    tol : float (very small number)
+        tol (default=1e-12) is the absolute value below which the direction cosine value is set to zero. 
     
     Returns
     -------
@@ -330,6 +332,10 @@ def getDirCosinesFromZenithAndAzimuthAngles(zenith_angle, azimuth_angle, atype='
     cos_A = np.sin(zenith_angle)*np.cos(azimuth_angle)
     cos_B  = np.sin(zenith_angle)*np.sin(azimuth_angle)
     cos_C = np.cos(zenith_angle)
+    # set extremely small values to zero
+    cos_A = 0 if abs(cos_A) < tol else cos_A
+    cos_B = 0 if abs(cos_B) < tol else cos_B 
+    cos_C = 0 if abs(cos_C) < tol else cos_C 
     return (cos_A, cos_B, cos_C)
 
 def get_alpha_beta_gamma_set(alpha=None, beta=None, gamma=None, force_zero='none'):
