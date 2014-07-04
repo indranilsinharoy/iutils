@@ -90,8 +90,9 @@ class GaussianBeam(object):
         return self._waistRad*self._div*1000
 
     def get_beam_diameter(self, z):
-        """beam diameter defined by `1/e^2` intensity at a distance ``z`` mm
-        from the waist. Half of this quantity is also called the "Size" in Zemax
+        """beam diameter defined by `1/e^2` intensity at a distance ``z`` 
+        mm from the waist. Half of this quantity is also called the "Size" 
+        in Zemax
 
         Parameters
         ----------
@@ -118,8 +119,8 @@ class GaussianBeam(object):
         Returns
         -------
         phaseRoc : float
-            the phase radius of curvature in mm at a distance ``z`` from the
-            waist
+            the phase radius of curvature in mm at a distance ``z`` from 
+            the waist
         """
         try:
             phaseRoc = z*(1 + (self._rayl/z)**2)

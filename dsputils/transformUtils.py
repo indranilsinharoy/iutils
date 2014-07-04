@@ -1,7 +1,7 @@
-#-------------------------------------------------------------------------------
-# Name:          transformUtils.py
-# Purpose:       collection of utilities for transformations based calculations such 
-#                as FFT, etc. 
+#--------------------------------------------------------------------------
+# Name:          transformutils.py
+# Purpose:       collection of utilities for transformations based 
+#                calculations such as FFT, etc. 
 #
 # Author:        Indranil Sinharoy
 #
@@ -9,9 +9,9 @@
 # Last Modified: 11/20/2013
 # Copyright:     (c) Indranil Sinharoy 2013
 # Licence:       MIT License
-#-------------------------------------------------------------------------------
-"""Collection of utilities for transformations used in signal processing such as for
-FFT calculations, etc.
+#--------------------------------------------------------------------------
+"""Collection of utilities for transformations used in signal processing 
+such as for FFT calculations, etc.
 """
 from __future__ import division, print_function
 import warnings
@@ -21,46 +21,55 @@ import scipy.special as _sps
 
 
 def fft_freq_bin(N, sides='full', order=0, Fs=1):
-    """Returns an array of frequency indices (bins) in cycles per unit. If `Fs=1`, the returned vector represents the normalized frequency 
+    """Returns an array of frequency indices (bins) in cycles per unit. 
+    If `Fs=1`, the returned vector represents the normalized frequency 
     
     Parameters
     ----------
-    N : Integer
-        number of samples used to generate the indices for -0.5*Fs <= f*Fs < 0.5*Fs .  
-    sides : String 
-        representing the desired region of the frequency index to be returned. 
+    N : integer
+        number of samples used to generate the indices for 
+        -0.5*Fs <= f*Fs < 0.5*Fs .  
+    sides : string 
+        representing the desired region of the frequency index to be 
+        returned. 
+        
         Options are:
-        `full` = `N` frequency indices between [-0.5, 0.5) are returned (default)
-        `pos`  = `(N+1)//2` frequency indices between [0, 0.5) are returned
-        `neg`  = `N//2` frequency indices between [-0.5, 0) are returned.
-        `both` =  a tuple (neg_freq_indices, pos_freq_indices) is returned. The returned vectors may be 
-                  combined using `np.hstack((fn, fp))`, for example.
-    order : Integer 
+
+        - full = ``N`` frequency indices between [-0.5, 0.5) are returned; 
+        - pos  = ``(N+1)//2`` frequency indices between [0, 0.5) are returned; 
+        - neg  = ``N//2`` frequency indices between [-0.5, 0) are returned;
+        - both =  a tuple (neg_freq_indices, pos_freq_indices) is returned. 
+                  The returned vectors may be combined using  
+                  `np.hstack((fn, fp))`, for example.
+    order : integer 
         determines the way the frequency indices are arranged when `sides=full`
          0 = DC, pos_frequencyIndices, neg_frequencyIndices
          1 = neg_frequencyIndices, DC, pos_frequencyIndices
-    Fs : Float
+    Fs : float
         Sampling frequency (or 1/sample_spacing) its unit being samples/cycle
     
     Returns
     -------
-    fc : frequency index vector, or a tuple of frequency index vectors (see above).
+    fc : ndarray or tuple of ndarrays
+        frequency index vector, or a tuple of frequency index vectors 
+        (see above).
     
     Note 
     ----
-    The default behavior of this function is similar to Numpy's `fft.fftfreq` function.
+    The default behavior of this function is similar to Numpy's 
+    ``fft.fftfreq`` function.
     
     Examples
     --------
-    >>>fft_freq_bin(4)
+    >>> fft_freq_bin(4)
     array([ 0.  ,  0.25, -0.5 , -0.25])
-    >>>fft_freq_bin(5)
+    >>> fft_freq_bin(5)
     array([ 0. ,  0.2,  0.4, -0.4, -0.2])
-    >>>fft_freq_bin(4, order=1)
+    >>> fft_freq_bin(4, order=1)
     array([-0.5 , -0.25,  0.  ,  0.25])
-    >>>fft_freq_bin(4, 'both')
+    >>> fft_freq_bin(4, 'both')
     (array([-0.5 , -0.25]), array([ 0.  ,  0.25]))
-    >>>fft_freq_bin(4, order=1, Fs=10)
+    >>> fft_freq_bin(4, order=1, Fs=10)
     array([-5. , -2.5,  0. ,  2.5])
     
     Reference: IPython notebook, "Understanding FFT frequency index"

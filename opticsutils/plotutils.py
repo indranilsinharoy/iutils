@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #-------------------------------------------------------------------------------
-# Name:          opticsPlottingUtils.py
+# Name:          plotutils.py
 # Purpose:       collection of plotting and visualization utilities for optics.
 #
 # Author:        Indranil Sinharoy
@@ -19,13 +19,15 @@ import matplotlib as _mplb
 import matplotlib.pylab as _plt
 
 def intensityPSF_Blues(N=1000):
-    """Return ColorBrewer 2.0 9-class Blues based matplotlib colormap optimized for showing intensity PSF
+    """Return ColorBrewer 2.0 9-class Blues based matplotlib colormap 
+    optimized for showing intensity PSF
     
-    This colormap is a sequential colormap, however it has more color distribution near zero.
+    This colormap is a sequential colormap, however it has more color 
+    distribution near zero.
     
     Parameters
     ----------
-    N : Integer
+    N : integer
         Length of the colormap
         
     Returns
@@ -73,15 +75,16 @@ def intensityPSF_Blues(N=1000):
     return psfblues
     
 def intensityPSF_BlRd(N=1000):
-    """Return cool to warm colormap based matplotlib colormap optimized for showing intensity PSF
+    """Return cool to warm colormap based matplotlib colormap optimized for 
+    showing intensity PSF
     
-    This colormap is a diverging colormap based on "Diverging Maps for Scientific Visualization," 
-    by K Moreland; however it has more color distribution near zero by compressing the blue end
-    of the scale.
+    This colormap is a diverging colormap based on "Diverging Maps for 
+    Scientific Visualization," by K Moreland; however it has more color 
+    distribution near zero by compressing the blue end of the scale.
     
     Parameters
     ----------
-    N : Integer
+    N : integer
         Length of the colormap
         
     Returns
