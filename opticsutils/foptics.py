@@ -6,7 +6,7 @@
 # Author:        Indranil Sinharoy
 #
 # Created:       09/22/2012
-# Last Modified: 07/04/2014
+# Last Modified: 07/09/2014
 # Copyright:     (c) Indranil Sinharoy 2012, 2013, 2014
 # Licence:       MIT License
 #-------------------------------------------------------------------------------
@@ -18,6 +18,46 @@ import numpy as _np
 from iutils.signalutils.signals import jinc as _jinc
 import iutils.opticsutils.imager as _imgr
 
+def gaussian_lens_formula(u=None, v=None, f=None, infinity=10e20):
+    """return the third value of the Gaussian lens formula, given any two
+
+    Parameters
+    ----------
+    u : float, optional
+        object distance
+    v : float, optional
+        image distance
+    f : float, optional
+        focal length
+    infinity : float
+        numerical value to represent infinity (default=10e20)
+
+    Returns
+    -------
+    value : float
+        the third value given the other two of the Gaussian lens formula
+
+    Examples
+    --------
+    >>> gaussian_lens_formula(u=1e20, f=10)
+    10.0
+    """
+    if u:
+        if v:
+            f = (u*v)/(u+v)
+            return f
+        elif f:
+            try:
+                v = (u*f)/(u - f)
+            except ZeroDivisionError:
+                v = infinity
+            return v
+    else:
+        try:
+            u = (v*f)/(v - f)
+        except ZeroDivisionError:
+            u = infinity
+        return u
 
 
 def fresnel_number(r, z, wl=550e-6, approx=False):
@@ -107,6 +147,25 @@ def airy_pattern(wl, r, zxp, rho, norm=1):
     -------
     pattern : ndarray
         Fraunhoffer diffraction pattern (Airy pattern)
+
+    Examples
+    --------
+    This example creates an airy pattern for light wave of 0.55 microns 
+    wavelength diffracting through an unaberrated lens of focal length 
+    50 mm, and epd 20 mm. The airy pattern is generated on a spatial grid 
+    which extends between -5*lambda and 5*lambda along both X and Y
+
+    >>> lamba = 550e-6    
+    >>> M, N = 513, 513            # odd grid for symmetry  
+    >>> dx = 10*lamba/N  
+    >>> dy = 10*lamba/M  
+    >>> x = (np.linspace(0, N-1, N) - N//2)*dx
+    >>> y = (np.linspace(0, M-1, M) - M//2)*dy
+    >>> xx, yy = np.meshgrid(x, y)
+    >>> r = np.hypot(xx, yy)
+    >>> w = 10                    # radius, in mm
+    >>> z = 50                    # z-distance, in mm
+    >>> ipsf = fou.airy_pattern(lamba, w, z, r, 1)
     """
     # The jinc() function used here is defined as jinc(x) = J_1(x)/x, jinc(0) = 0.5
     pattern = ((_np.pi*r**2/(wl*zxp))
@@ -242,6 +301,7 @@ def geometric_depth_of_field(focalLength, fNumber, objDist, coc, grossExpr=False
     gdof = _imgr.geometric_depth_of_field(focalLength, fNumber, objDist, coc,
                                           grossExpr)
     return gdof
+
 
 
 #----------------------------------
@@ -508,6 +568,18 @@ def get_alpha_beta_gamma_set(alpha=None, beta=None, gamma=None, forceZero='none'
 #   TEST FUNCTIONS
 # ---------------------------
 
+def _test_gaussian_lens_formula():
+    """Test gaussian_lens_formula function"""
+    v = gaussian_lens_formula(u=10e20, f=10)
+    nt.assert_equal(v, 10.0)
+    v = gaussian_lens_formula(u=5000.0, f=100)
+    nt.assert_almost_equal(v, 102.04081632653062, decimal=5)
+    u = gaussian_lens_formula(v=200, f=200)
+    nt.assert_equal(u, 10e20)
+    f = gaussian_lens_formula(u=10e20, v=40)
+    nt.assert_almost_equal(f, 40, decimal=5)
+    print("test_gaussian_lens_formula() is successful")
+
 def _test_fresnel_number():
     """Test fresnel_number function"""
     fresnelNum = fresnel_number(10, 500, 550e-6)
@@ -605,6 +677,7 @@ if __name__ == '__main__':
     import numpy.testing as nt
     from numpy import set_printoptions
     set_printoptions(precision=4, linewidth=85)  # for visual output in manual tests.
+    _test_gaussian_lens_formula()
     _test_fresnel_number()
     _test_airy_pattern()
     _test_get_dir_cos_from_zenith_azimuth()
