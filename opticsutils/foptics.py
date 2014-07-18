@@ -17,6 +17,8 @@ import math as _math
 import numpy as _np
 from iutils.signalutils.signals import jinc as _jinc
 import iutils.opticsutils.imager as _imgr
+import warnings as _warnings
+import collections as _co
 
 def gaussian_lens_formula(u=None, v=None, f=None, infinity=10e20):
     """return the third value of the Gaussian lens formula, given any two
@@ -59,7 +61,6 @@ def gaussian_lens_formula(u=None, v=None, f=None, infinity=10e20):
             u = infinity
         return u
 
-
 def fresnel_number(r, z, wl=550e-6, approx=False):
     """calculate the fresnel number
 
@@ -74,7 +75,7 @@ def fresnel_number(r, z, wl=550e-6, approx=False):
     wl : float, optional
         wavelength of light (default=550e-6 mm)
     approx : boolean, optional
-        if ``True``, uses the approximate expression (default is False)
+        if ``True``, uses the approximate expression (default is ``False``)
 
     Returns
     -------
@@ -141,7 +142,7 @@ def airy_pattern(wl, r, zxp, rho, norm=1):
     norm : integer (0 or 1 or 2), optional
         0 = None;
         1 = Peak value is 1.0 (default);
-        2 = Sum of the area under PSF = 1.0
+        2 = Sum of the area under PSF=1.0
 
     Returns
     -------
@@ -150,15 +151,15 @@ def airy_pattern(wl, r, zxp, rho, norm=1):
 
     Examples
     --------
-    This example creates an airy pattern for light wave of 0.55 microns 
-    wavelength diffracting through an unaberrated lens of focal length 
-    50 mm, and epd 20 mm. The airy pattern is generated on a spatial grid 
+    This example creates an airy pattern for light wave of 0.55 microns
+    wavelength diffracting through an unaberrated lens of focal length
+    50 mm, and epd 20 mm. The airy pattern is generated on a spatial grid
     which extends between -5*lambda and 5*lambda along both X and Y
 
-    >>> lamba = 550e-6    
-    >>> M, N = 513, 513            # odd grid for symmetry  
-    >>> dx = 10*lamba/N  
-    >>> dy = 10*lamba/M  
+    >>> lamba = 550e-6
+    >>> M, N = 513, 513            # odd grid for symmetry
+    >>> dx = 10*lamba/N
+    >>> dy = 10*lamba/M
     >>> x = (np.linspace(0, N-1, N) - N//2)*dx
     >>> y = (np.linspace(0, M-1, M) - M//2)*dy
     >>> xx, yy = np.meshgrid(x, y)
@@ -422,15 +423,15 @@ def seidel_5(u0, v0, X, Y, wd=0, w040=0, w131=0, w222=0, w220=0, w311=0):
     theta = _np.arctan2(v0, u0)       # image rotation angle
     u0r = _np.sqrt(u0**2 + v0**2)     # image height
     # rotate pupil grid
-    Xr = X*_np.cos(theta) + Y*_np.sin(theta)
+    Xr =  X*_np.cos(theta) + Y*_np.sin(theta)
     Yr = -X*_np.sin(theta) + Y*_np.cos(theta)
     rho2 = Xr**2 + Yr**2
-    w = (  wd*rho2         +    # defocus
-         w040*rho2**2      +    # spherical
-         w131*u0r*rho2*Xr  +    # coma
-         w222*u0r**2*Xr**2 +    # astigmatism
-         w220*u0r**2*rho2  +    # field curvature
-         w311*u0r**3*Xr     )   # distortion
+    w = ( wd*rho2            # defocus
+        + w040*rho2**2       # spherical
+        + w131*u0r*rho2*Xr   # coma
+        + w222*u0r**2*Xr**2  # astigmatism
+        + w220*u0r**2*rho2   # field curvature
+        + w311*u0r**3*Xr )   # distortion
     return w
 
 
@@ -441,17 +442,17 @@ def seidel_5(u0, v0, X, Y, wd=0, w040=0, w131=0, w222=0, w220=0, w311=0):
 # useful for Fourier Optics calculations too, such as direction cosine calculations.
 
 def get_dir_cos_from_zenith_azimuth(zenith, azimuth, atype='deg', tol=1e-12):
-    """Returns the direction cosines cos_A, cos_B & cos_C
+    """Returns the direction cosines alpha, beta & gamma
     of the direction vector described by zenith and azimuth angles
 
     Parameters
     ----------
     zenith : float
         angle of the direction vector with respect to the positive z-axis.
-        0 <= zenith <= 180 degrees
+        :math:`0 \leq \phi \leq \pi`
     azimuth : float
         angle of the direction vector with respect to the positive x-axis.
-        0 <= azimuth <= 360 degrees
+        :math:`0 \leq \\theta \leq 2\pi`
     atype : string ('rad' or 'deg')
         angle unit in degree (default) or radians
     tol : float (very small number)
@@ -461,17 +462,19 @@ def get_dir_cos_from_zenith_azimuth(zenith, azimuth, atype='deg', tol=1e-12):
     Returns
     -------
     direction_cosines : tuple
-        (cosA, cosB, cosC) are the direction cosines, sometimes
-        represented as alhpa, beta, gamma.
+        (alpha, beta, gamma) are the direction cosines, which are
+        cos(A), cos(B), cos(C).
 
     Notes
     -----
-    1. The angle of elevation is given as 90 - zenith.
+    1. The angle of elevation is given as 90 - zenith (:math:`\\phi`).
     2. Direction cosines are defined as follows:
 
-       - alpha = cos A = sin(zenith)cos(azimuth)
-       - beta  = cos B = sin(zenith)sin(azimuth)
-       - gamma = cos C = cos(zenith)
+       - :math:`\\alpha = cos(A) = sin(\\phi)cos(\\theta)`
+       - :math:`\\beta  = cos(B) = sin(\\phi)sin(\\theta)`
+       - :math:`\\gamma = cos(C) = cos(\\phi)`
+    3. A, B, C are angles that the wave vector ``k`` makes with x, y, and
+       z axis respectively.
 
     Examples
     --------
@@ -480,6 +483,7 @@ def get_dir_cos_from_zenith_azimuth(zenith, azimuth, atype='deg', tol=1e-12):
 
     See Also
     --------
+    get_zenith_azimuth_from_dir_cos(),
     get_alpha_beta_gamma_set()
     """
     if atype=='deg':
@@ -492,7 +496,79 @@ def get_dir_cos_from_zenith_azimuth(zenith, azimuth, atype='deg', tol=1e-12):
     cosA = 0 if abs(cosA) < tol else cosA
     cosB = 0 if abs(cosB) < tol else cosB
     cosC = 0 if abs(cosC) < tol else cosC
-    return (cosA, cosB, cosC)
+    dirCosines = _co.namedtuple('dirCosines', ['alpha', 'beta', 'gamma'])
+    return dirCosines(cosA, cosB, cosC)
+
+def get_zenith_azimuth_from_dir_cos(gamma, alpha=None, beta=None, atype='deg'):
+    """Returns the zenith and azimuth angles of the direction vector
+    given the direction cosines gamma, alpha and/or beta
+
+    Parameters
+    ----------
+    gamma : float
+        direction cosine, i.e. cos(C)
+    alpha : float, optional if ``beta`` is provided
+        direction cosine, i.e. cos(A)
+    beta : float, optional if ``alpha`` is provided
+        direction cosine, i.e. cos(B)
+
+    Returns
+    -------
+    zenith : float
+        angle of the direction vector with respect to the positive z-axis
+        :math:`0 \leq \phi \leq \pi`
+    azimuth : float
+        angle of the direction vector with respect to the positive x-axis
+        :math:`0 \leq \\theta \leq 2\pi`
+
+    Examples
+    --------
+    >>> alpha, beta, gamma = 0.33682408883, 0.05939117461, 0.93969262078
+    >>> get_zenith_azimuth_from_dir_cos(gamma, alpha)
+    (20.000000001 10.0000000188)
+
+    Notes
+    -----
+    1. The direction cosines (:math:`\\alpha, \\beta, \\gamma`),
+       azimuth (:math:`\\theta`) and zenith (:math:`\\phi`) are related
+       as follows:
+
+       - :math:`\\alpha = cos(A) = sin(\\phi)cos(\\theta)`
+       - :math:`\\beta  = cos(B) = sin(\\phi)sin(\\theta)`
+       - :math:`\\gamma = cos(C) = cos(\\phi)`
+
+       where, A, B, C are angles that the wave vector ``k`` makes with
+       x, y, and z axis respectively.
+
+    See Also
+    --------
+    get_dir_cos_from_zenith_azimuth()
+    """
+    if (alpha is None) and (beta is None):
+        raise ValueError, "Invalid input. Expecting either alpha or beta"
+    if atype not in ['deg', 'rad']:
+        raise ValueError, "Invalid angle type specification"
+    zenith = _np.arccos(gamma)
+    if alpha is not None:
+        num = alpha
+        trigfunc = _np.arccos
+    else:
+        num = beta
+        trigfunc = _np.arcsin
+    # the following code-block is within warning context in order to handle
+    # error cases caused by numerics. For e.g. the computed zenith may
+    # sometime be 1.000000000000018 when the true value is really 1.0,
+    # but sin(1.000000000000018) is invalid
+    with _warnings.catch_warnings(record=True):
+        azimuth = trigfunc(num/_np.sin(zenith))
+        if _math.isnan(azimuth):
+            zenith = _np.round(zenith, 10)
+            azimuth = trigfunc(num/_np.sin(zenith))
+    rayAngle = _co.namedtuple('rayAngle', ['zenith', 'azimuth'])
+    if atype=='deg':
+        return rayAngle(_np.rad2deg(zenith), _np.rad2deg(azimuth))
+    else:
+        return rayAngle(zenith, azimuth)
 
 def get_alpha_beta_gamma_set(alpha=None, beta=None, gamma=None, forceZero='none'):
     """Function to return the complete set of direction cosines alpha,
@@ -501,11 +577,11 @@ def get_alpha_beta_gamma_set(alpha=None, beta=None, gamma=None, forceZero='none'
     Parameters
     ----------
     alpha : float
-        Direction cosine, cos(A); see Notes.
+        Direction cosine, i.e. cos(A); see Notes.
     beta : float
-        Direction cosine, cos(B); see Notes.
+        Direction cosine, i.e. cos(B); see Notes.
     gamma : float
-        Direction cosine, cos(C); see Notes.
+        Direction cosine, i.e. cos(C); see Notes.
     forceZero : string ('none' or 'alpha' or 'beta' or 'gamma')
         Force a particular direction cosine to be zero, in order to
         calculate the other two direction cosines when the wave vector
@@ -521,14 +597,16 @@ def get_alpha_beta_gamma_set(alpha=None, beta=None, gamma=None, forceZero='none'
     1. The function doesn't check for the validity of alpha, beta, and
        gamma.
     2. If the function returns (None, None, None), most likely 2 out of
-       the 3 input direction cosines passed are zeros, and ``forceZero``
+       the 3 input direction cosines given are zeros, and ``forceZero``
        is ``none``. Please provide the appropriate value for the parameter
        ``forceZero``.
     3. A, B, C are angles that the wave vector ``k`` makes with x, y, and
        z axis respectively.
 
     See Also
+    --------
     get_dir_cos_from_zenith_azimuth()
+    get_zenith_azimuth_from_dir_cos()
     """
     def f(x,y):
         return _np.sqrt(1.0 - x**2 - y**2)
@@ -601,11 +679,16 @@ def _test_airy_pattern():
     z = 25.0
     rho = _np.hypot(X,Y)
     I = airy_pattern(wavelength, radius, z, rho, norm=0)
-    expIntensity= _np.array([[1.37798644e-03, 8.36156468e-04, 3.56139554e-05, 8.36156468e-04, 1.37798644e-03],
-                            [8.36156468e-04, 1.77335279e-05, 4.89330106e-02, 1.77335279e-05, 8.36156468e-04],
-                            [3.56139554e-05, 4.89330106e-02, 3.26267914e+07, 4.89330106e-02, 3.56139554e-05],
-                            [8.36156468e-04, 1.77335279e-05, 4.89330106e-02, 1.77335279e-05, 8.36156468e-04],
-                            [1.37798644e-03, 8.36156468e-04, 3.56139554e-05, 8.36156468e-04, 1.37798644e-03]])
+    expIntensity= _np.array([[1.37798644e-03, 8.36156468e-04, 3.56139554e-05,
+                              8.36156468e-04, 1.37798644e-03],
+                            [8.36156468e-04, 1.77335279e-05, 4.89330106e-02,
+                             1.77335279e-05, 8.36156468e-04],
+                            [3.56139554e-05, 4.89330106e-02, 3.26267914e+07,
+                             4.89330106e-02, 3.56139554e-05],
+                            [8.36156468e-04, 1.77335279e-05, 4.89330106e-02,
+                             1.77335279e-05, 8.36156468e-04],
+                            [1.37798644e-03, 8.36156468e-04, 3.56139554e-05,
+                             8.36156468e-04, 1.37798644e-03]])
     nt.assert_array_almost_equal(expIntensity, I, decimal=2)
     # check for normalization
     I = airy_pattern(wavelength, radius, z, rho)
@@ -623,6 +706,31 @@ def _test_get_dir_cos_from_zenith_azimuth():
     exp_array = _np.array([1.0, 0.0, 0.0])
     nt.assert_array_almost_equal(_np.array([a, b, g]), exp_array, decimal=8)
     print("test_getDirCosinesFromZenithAndAzimuthAngles() is successful")
+
+def _test_get_zenith_azimuth_from_dir_cos():
+    """Test get_zenith_azimuth_from_dir_cos() function"""
+    alpha, beta, gamma = 0.33682408883, 0.05939117461, 0.93969262078
+    zenith, azimuth = get_zenith_azimuth_from_dir_cos(gamma, alpha)
+    nt.assert_array_almost_equal(_np.array((zenith, azimuth)),
+                                 _np.array((20.0, 10.0)), decimal=7)
+    zenith, azimuth = get_zenith_azimuth_from_dir_cos(gamma, beta=beta)
+    nt.assert_array_almost_equal(_np.array((zenith, azimuth)),
+                                 _np.array((20.0, 10.0)), decimal=7)
+    zenith, azimuth = get_zenith_azimuth_from_dir_cos(gamma, beta=beta,
+                                                      atype='rad')
+    nt.assert_array_almost_equal(_np.array((zenith, azimuth)),
+                                 _np.array((0.349065850416, 0.17453292518)),
+                                 decimal=7)
+    try:
+        zenith, azimuth = get_zenith_azimuth_from_dir_cos(gamma, alpha,
+                                                          atype='invalid')
+    except ValueError: # as e:
+        #nt.assert_string_equal(e, 'Invalid angle type specification')
+        pass
+    zenith, azimuth = get_zenith_azimuth_from_dir_cos(0.9950371902099892,
+                                                      alpha=0.0)
+    nt.assert_almost_equal(azimuth, 90.0, decimal=8)
+    print("test_get_zenith_azimuth_from_dir_cos() is successful")
 
 def _test_get_alpha_beta_gamma_set():
     """Test get_alpha_beta_gamma_set() function"""
@@ -661,7 +769,11 @@ def _test_depth_of_focus():
     wavelength = 500e-6  # mm
     fnumber = [2, 2.8, 4.0, 5.6, 8.0, 10, 11.0, 16.0, 22.0]
     dz = [depth_of_focus(N, wavelength) for N in fnumber]
-    exp_array = _np.array((0.004074366543152521, 0.00798575842457894, 0.016297466172610083, 0.03194303369831576, 0.06518986469044033, 0.10185916357881303, 0.12324958793036377, 0.2607594587617613, 0.49299835172145506))
+    exp_array = _np.array((0.004074366543152521, 0.00798575842457894,
+                           0.016297466172610083, 0.03194303369831576,
+                           0.06518986469044033, 0.10185916357881303,
+                           0.12324958793036377, 0.2607594587617613,
+                           0.49299835172145506))
     nt.assert_array_almost_equal(_np.array(dz), exp_array, decimal=6)
     print("test_depthOfFocus() is successful")
 
@@ -681,5 +793,6 @@ if __name__ == '__main__':
     _test_fresnel_number()
     _test_airy_pattern()
     _test_get_dir_cos_from_zenith_azimuth()
+    _test_get_zenith_azimuth_from_dir_cos()
     _test_get_alpha_beta_gamma_set()
     _test_depth_of_focus()
