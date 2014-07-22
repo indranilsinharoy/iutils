@@ -10,7 +10,8 @@
 # Copyright:     (c) Indranil Sinharoy 2012, 2013, 2014
 # Licence:       MIT License
 #-------------------------------------------------------------------------------
-"""functions useful for fourier optics based calculations
+"""foptics module contains some useful functions for Fourier Optics based
+calculations.
 """
 from __future__ import division, print_function
 import math as _math
@@ -338,9 +339,9 @@ def defocus(w020, radius, zi):
 
     .. math::
 
-        W020 = (delta_z*a^2)/(2*zi(zi + delta_z))
+        W_{020} = \\frac{\\delta_z a^2}{2 z_i(z_i + \delta_z)}
 
-    which may also be approximated as :math:`W020 = delta_z/8N^2`, where
+    which may also be approximated as :math:`W_{020} = \delta_z/8N^2`, where
     `N` is the f-number.
 
     See Also
@@ -383,9 +384,9 @@ def w020_from_defocus(radius, zi, deltaZ, waveLength=1.0):
 
     .. math::
 
-        W020 = (delta_z*a^2)/(2*zi(zi + delta_z))
+        W_{020} = \\frac{\\delta_z a^2}{2 zi(z_i + \\delta_z)}
 
-    which may also be approximated as :math:`W020 = delta_z/8N^2`, where
+    which may also be approximated as :math:`W_{020} = \delta_z/8N^2`, where
     ``N`` is the f-number.
 
     See Also
@@ -394,6 +395,8 @@ def w020_from_defocus(radius, zi, deltaZ, waveLength=1.0):
     """
     w020 = (deltaZ*radius**2)/(2.0*zi*(zi + deltaZ))
     return w020/waveLength
+
+w020_from_defocus()
 
 def seidel_5(u0, v0, X, Y, wd=0, w040=0, w131=0, w222=0, w220=0, w311=0):
     """Computer wavefront OPD for first 5 Seidel wavefront aberration
