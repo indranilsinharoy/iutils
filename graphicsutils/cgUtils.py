@@ -14,17 +14,19 @@ import numpy as _np
 
 def dual_matrix(vec):
     """Returns the dual matrix, also known as the hat operator in skew
-    theory
+    theory. The dual matrix is the skew-symmetric matrix associated
+    with the 3x1 vector
 
     Parameters
     ----------
-    vec : 3-element numpy array or 3x1 numpy matrix
-        vector in R^3 space
+    vec : 3-element numpy array or 3x1 numpy matrix object
+        vector in :math:`\mathbb{R}^3` space
 
     Returns
     -------
     vec_hat : numpy matrix
-        square matrix
+        the skew-symmetric matrix, a square matrix, associated with the
+        vector ``vec``.
 
     Notes
     -----
@@ -44,6 +46,23 @@ def dual_matrix(vec):
 
     This isomorphism is represented mathematically as
     :math:`\\bigwedge : \mathbb{R}^3 \\rightarrow so(3); u \\mapsto \\hat{u}`
+
+    Examples
+    --------
+    The following example also demonstrates a property of the dual matrix
+    :math:`\\hat{u}`, that the column (and row) vectors span the subspace
+    orthogonal to the vector :math:`u`
+
+    >>> u = np.array([1, 2, 3])
+    >>> uhat = cg.dual_matrix(u)
+    >>> uhat
+    matrix([[ 0., -3.,  2.],
+            [ 3.,  0., -1.],
+            [-2.,  1.,  0.]])
+    >>> np.dot(uhat, u)
+    matrix([[ 0.,  0.,  0.]])
+    >>> np.dot(uhat.T, u)
+    matrix([[ 0.,  0.,  0.]])
     """
     x, y, z = [elem.item() for elem in vec]
     return _np.matrix(((0.0, -z, y),(z, 0.0, -x), (-y, x, 0.0)))
