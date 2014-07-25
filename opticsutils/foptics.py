@@ -21,47 +21,6 @@ import iutils.opticsutils.imager as _imgr
 import warnings as _warnings
 import collections as _co
 
-def gaussian_lens_formula(u=None, v=None, f=None, infinity=10e20):
-    """return the third value of the Gaussian lens formula, given any two
-
-    Parameters
-    ----------
-    u : float, optional
-        object distance
-    v : float, optional
-        image distance
-    f : float, optional
-        focal length
-    infinity : float
-        numerical value to represent infinity (default=10e20)
-
-    Returns
-    -------
-    value : float
-        the third value given the other two of the Gaussian lens formula
-
-    Examples
-    --------
-    >>> gaussian_lens_formula(u=1e20, f=10)
-    10.0
-    """
-    if u:
-        if v:
-            f = (u*v)/(u+v)
-            return f
-        elif f:
-            try:
-                v = (u*f)/(u - f)
-            except ZeroDivisionError:
-                v = infinity
-            return v
-    else:
-        try:
-            u = (v*f)/(v - f)
-        except ZeroDivisionError:
-            u = infinity
-        return u
-
 def fresnel_number(r, z, wl=550e-6, approx=False):
     """calculate the fresnel number
 
@@ -396,8 +355,6 @@ def w020_from_defocus(radius, zi, deltaZ, waveLength=1.0):
     w020 = (deltaZ*radius**2)/(2.0*zi*(zi + deltaZ))
     return w020/waveLength
 
-w020_from_defocus()
-
 def seidel_5(u0, v0, X, Y, wd=0, w040=0, w131=0, w222=0, w220=0, w311=0):
     """Computer wavefront OPD for first 5 Seidel wavefront aberration
     coefficients plus defocus.
@@ -649,18 +606,6 @@ def get_alpha_beta_gamma_set(alpha=None, beta=None, gamma=None, forceZero='none'
 #   TEST FUNCTIONS
 # ---------------------------
 
-def _test_gaussian_lens_formula():
-    """Test gaussian_lens_formula function"""
-    v = gaussian_lens_formula(u=10e20, f=10)
-    nt.assert_equal(v, 10.0)
-    v = gaussian_lens_formula(u=5000.0, f=100)
-    nt.assert_almost_equal(v, 102.04081632653062, decimal=5)
-    u = gaussian_lens_formula(v=200, f=200)
-    nt.assert_equal(u, 10e20)
-    f = gaussian_lens_formula(u=10e20, v=40)
-    nt.assert_almost_equal(f, 40, decimal=5)
-    print("test_gaussian_lens_formula() is successful")
-
 def _test_fresnel_number():
     """Test fresnel_number function"""
     fresnelNum = fresnel_number(10, 500, 550e-6)
@@ -792,7 +737,6 @@ if __name__ == '__main__':
     import numpy.testing as nt
     from numpy import set_printoptions
     set_printoptions(precision=4, linewidth=85)  # for visual output in manual tests.
-    _test_gaussian_lens_formula()
     _test_fresnel_number()
     _test_airy_pattern()
     _test_get_dir_cos_from_zenith_azimuth()
