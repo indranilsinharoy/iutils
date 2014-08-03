@@ -182,7 +182,6 @@ def depth_of_focus(effFNum, wavelength=550e-6, firstZero=False, full=False):
         deltaZ = deltaZ*2.0
     return deltaZ
 
-
 def depth_of_field(focalLength, fNumber, objDist, wavelength=550e-6, firstZero=False):
     """Returns the diffraction based depth of field in the object space
 
@@ -230,7 +229,6 @@ def depth_of_field(focalLength, fNumber, objDist, wavelength=550e-6, firstZero=F
     # total DOF extent
     dofTotal = dofFar - dofNear
     return dofTotal, dofFar, dofNear
-
 
 def geometric_depth_of_field(focalLength, fNumber, objDist, coc, grossExpr=False):
     """returns the geometric depth of field value

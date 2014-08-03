@@ -20,23 +20,27 @@ import matplotlib.pylab as _plt
 from mpl_toolkits.mplot3d import Axes3D
 
 def traceColormap(cmap, figsize=(7,6), bcolor='k'):
-    """function to plot the trace of RGB values in the given matplotlib compatible colormap
+    """function to plot the trace of RGB values in the given matplotlib 
+    compatible colormap
     
     Parameters
     ----------
     cmap : colormap
-           The colormap must be matplotlib compatible. i.e. it must be a matplotlib colormap or created using matplotlib.colors.LinearSegmentedColormap().
+      the colormap must be matplotlib compatible. i.e. it must be a 
+      matplotlib colormap or created using 
+      ``matplotlib.colors.LinearSegmentedColormap()``.
            
     Returns
     -------
     None
     
-    Note
-    ----
-    The function creates a matplotlib figure with 3d axis  and traces the RGB values of the colormap.
+    Notes
+    -----
+    The function creates a matplotlib figure with 3d axis  and traces 
+    the RGB values of the colormap.
     
-    Example
-    -------
+    Examples
+    --------
     traceColormap(mpl.cm.jet)
     """
     #Set figure characteristics
@@ -54,7 +58,8 @@ def traceColormap(cmap, figsize=(7,6), bcolor='k'):
     
     for i in range(cmap.N-1):
         c = C[i]
-        ax.plot([X[i],X[i+1]],[Y[i],Y[i+1]],[Z[i],Z[i+1]],color=c, lw=(3.75-(500./256 -1)*0.25))
+        ax.plot([X[i], X[i+1]], [Y[i], Y[i+1]], [Z[i], Z[i+1]], 
+                color=c, lw=(3.75-(500./256 -1)*0.25))
     
     # Figure decoration
     tt = ax.set_xticks(_np.array([0.0,0.25,0.5,0.75,1.0]))
@@ -96,10 +101,10 @@ def get_colormap(name='coolwarm_moreland', N=256):
     
     Parameters
     ----------
-    name : String
-           name of the colormap, e.g. coolwarm_moreland, etc.
-    N : Integer
-        Specifies the number of colors in the colormap
+    name : string, optional 
+      name of the colormap, e.g. coolwarm_moreland, etc.
+    N : integer, optional 
+      specifies the number of colors in the colormap
            
     """    
     if name=='coolwarm_moreland':
@@ -109,7 +114,20 @@ def get_colormap(name='coolwarm_moreland', N=256):
     
     
 def _get_coolwarm_moreland(N):
-    """Helper function for generating cool warm diverging colormap as specified by Keneth Moreland's paper 'Diverging Maps for Scientific Visualization,' Kenneth Moreland
+    """Helper function for generating cool warm diverging colormap.
+
+    Parameters
+    ---------- 
+    N : integer
+
+    Returns
+    ------- 
+    colormap : 
+      matplotlib colormap 
+
+    References
+    ----------
+    "Diverging Maps for Scientific Visualization," Kenneth Moreland.
     """
     col_seq = [( 59/255.,  76/255., 192/255.), ( 68/255.,  90/255., 204/255.), 
                ( 77/255., 104/255., 215/255.), ( 87/255., 117/255., 225/255.), 
@@ -228,8 +246,8 @@ def _get_coolwarm_moreland(N):
                        (0.93750, col_seq[30][2], col_seq[30][2]), 
                        (0.96875, col_seq[31][2], col_seq[31][2]), 
                        (1.00000, col_seq[32][2], col_seq[32][2]))}           
-    coolwarm_moreland = _mpl.colors.LinearSegmentedColormap('coolwarm_moreland', cdict, N)
-    return coolwarm_moreland
+    cwm = _mpl.colors.LinearSegmentedColormap('coolwarm_moreland', cdict, N)
+    return cwm
 
 def _test_traceColormap():
     """Visual test of the function traceColormap()"""
