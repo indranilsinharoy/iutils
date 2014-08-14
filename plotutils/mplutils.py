@@ -6,9 +6,7 @@
 # Author:        Indranil Sinharoy
 #
 # Created:       01/24/2013
-# Last Modified: 08/02/2014
-#                 1. Moved find_zero_crossings() from genutils.py to here
-#                 2. Split up Mayavi and matplotlib utiities
+# Last Modified: 08/14/2014
 # Copyright:     (c) Indranil Sinharoy 2013
 # Licence:       MIT License
 #-------------------------------------------------------------------------------
@@ -25,17 +23,19 @@ class arrow(object):
 
         Parameters
         ----------
-        start : 2-d vector (for 2D- plots)
-            starting point of the arrow.
-        end : end point of the arrow.
-            a 2-d vector for 2D plots
+        start : 2-tuple
+            2-d vector representing starting point of the arrow
+        end : 2-tuple
+            2-d vector representing end point of the arrow
+
+        Returns
+        ------- 
+        None 
         """
         if fig_object != None:
             self.fig = None
         else:
             self.fig = fig_object
-
-        #plot using Matplotlib
         arr_head2length_ratio = 0.1
         dx = (end[0]-start[0])
         dy = (end[1]-start[1])
@@ -82,14 +82,14 @@ def find_zero_crossings(f, a, b, func_args=(), n=100):
     --------
     (1) Zero crossings of a function that takes no arguments
 
-    >>> find_zero_crossings(np.cos -2*np.pi, 2*np.pi)
+    >>> mpu.find_zero_crossings(np.cos -2*np.pi, 2*np.pi)
     [-4.71238898038469, -1.5707963267948966, 1.5707963267948963, 4.71238898038469]
 
     (2) Zero crossing of a function that takes one argument
 
     >>> def func(x, a):
     >>>     return integrate.quad(lambda t: special.j1(t)/t, 0, x)[0] - a
-    >>> find_zero_crossings(func_t2, 1e-10, 25, func_args=(1,))
+    >>> mpu.find_zero_crossings(func_t2, 1e-10, 25, func_args=(1,))
     [2.65748482456961, 5.672547403169345, 8.759901449672629, 11.87224239501442, 14.99576753285061, 18.12516624215325, 21.258002755273516, 24.393014762783487]
     """
     # Evaluate the function at `n` points on the real line within the interval [a,b]
@@ -218,6 +218,60 @@ def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3,
             for spine, offset in zip(allSpines, (left, right, top, bottom)):
                 ax.spines[spine].set_position((ref, pos + offset))
 
+def format_stem_plot(mline, stlines, bline, mecol='#222222', mfcol='#555555', 
+                     mstyle='o', msize=5, mjoin='None', stcol='#f67088', 
+                     slw=1.6, bcol='#BBBBBB', blw=1.1, bstyle='--'):
+    """format matplotlib stem plot 
+
+    Parameters
+    ---------- 
+    mline : markerline object 
+        marker line returned by stem() function 
+    stlines : stemlines object 
+        stem lines returned by stem() function 
+    bline : baseline object  
+        base line returned by stem() function 
+    mecol : string, optional  
+        markerline edge color, default = '#222222'
+    mfcol : string, optional
+        markerline face color, default = '#555555'
+    mstyle : string marker type, optional 
+        marker pattern , default = 'o' 
+    stcol : string, optional 
+        stemlines color, default = '#f67088'
+    slw : integer, optional 
+        stemlines line width, default = 1.6
+    bcol : string, optional 
+        baseline color, default = '#BBBBBB'
+
+    Returns
+    ------- 
+    None
+
+    Examples
+    -------- 
+    >>> fig, ax = plt.subplots(1, 1)
+    >>> x = np.linspace(-np.pi, np.pi)
+    >>> y = np.sin(x)
+    >>> mline, stlines, bline = ax.stem(x, y)
+    >>> mpu.format_stem_plot(mline, stlines, bline)
+    >>> plt.show()
+    """
+    # marker settings
+    mline.set_marker(mstyle)
+    mline.set_markersize(msize)
+    mline.set_markeredgecolor(mecol)
+    mline.set_markerfacecolor(mfcol)
+    mline.set_linestyle(mjoin)
+    # stem line settings
+    for line in stlines:
+        line.set_color(stcol)
+        line.set_linewidth(slw)
+    # base line settings
+    bline.set_linestyle(bstyle)
+    bline.set_linewidth(blw)
+    bline.set_color(bcol)
+
 # ------------------------------------------------------------------------
 #           TESTING FUNCTIONS
 # -------------------------------------------------------------------------
@@ -240,7 +294,6 @@ def _test_arrow():
     v1 = np.array((3,-3))
     arrow(ori,v1,'c')
     plt.show()
-
 
 def _test_find_zero_crossings():
     """test find_zero_crossings function"""
