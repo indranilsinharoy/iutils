@@ -396,8 +396,6 @@ def seidel_5(u0, v0, X, Y, wd=0, w040=0, w131=0, w222=0, w220=0, w311=0):
 #-------------------------------------
 # Some ray optics helper functions
 #-------------------------------------
-# Don't move the following fuctions to another module ... these functions are also
-# useful for Fourier Optics calculations too, such as direction cosine calculations.
 
 def get_dir_cos_from_zenith_azimuth(zenith, azimuth, atype='deg', tol=1e-12):
     """Returns the direction cosines alpha, beta & gamma
@@ -407,10 +405,10 @@ def get_dir_cos_from_zenith_azimuth(zenith, azimuth, atype='deg', tol=1e-12):
     ----------
     zenith : float
         angle of the direction vector with respect to the positive z-axis.
-        :math:`0 \leq \phi \leq \pi`
+        :math:`0 \leq \\theta \leq \pi`
     azimuth : float
         angle of the direction vector with respect to the positive x-axis.
-        :math:`0 \leq \\theta \leq 2\pi`
+        :math:`0 \leq \phi \leq 2\pi`
     atype : string ('rad' or 'deg')
         angle unit in degree (default) or radians
     tol : float (very small number)
@@ -425,19 +423,29 @@ def get_dir_cos_from_zenith_azimuth(zenith, azimuth, atype='deg', tol=1e-12):
 
     Notes
     -----
-    1. The angle of elevation is given as 90 - zenith (:math:`\\phi`).
-    2. Direction cosines are defined as follows:
+    1. The zenith angle is also known as the inclination angle or polar 
+       angle.
+    2. The angle of elevation (i.e. the angle that the ray makes with
+       the x-y axis) is given as 90 - zenith (:math:`\\theta`).
+    3. Direction cosines are defined as follows:
 
-       - :math:`\\alpha = cos(A) = sin(\\phi)cos(\\theta)`
-       - :math:`\\beta  = cos(B) = sin(\\phi)sin(\\theta)`
-       - :math:`\\gamma = cos(C) = cos(\\phi)`
+       - :math:`\\alpha = cos(A) = sin(\\theta)cos(\phi)`
+       - :math:`\\beta  = cos(B) = sin(\\theta)sin(\phi)`
+       - :math:`\\gamma = cos(C) = cos(\\theta)`
     3. A, B, C are angles that the wave vector ``k`` makes with x, y, and
        z axis respectively.
+    4. The use of :math:`\\theta` and :math:`\phi` to represent zenith and
+       azimuth angles follow the convension specified by ISO standard
+       80000-2 :2009 [1]_
 
     Examples
     --------
     >>> get_dir_cos_from_zenith_azimuth(20.0, 10.0)
     (0.33682408883346515, 0.059391174613884698, 0.93969262078590843)
+
+    References
+    ----------
+    .. [1] http://en.wikipedia.org/wiki/Spherical_coordinate_system
 
     See Also
     --------
@@ -457,7 +465,7 @@ def get_dir_cos_from_zenith_azimuth(zenith, azimuth, atype='deg', tol=1e-12):
     dirCosines = _co.namedtuple('dirCosines', ['alpha', 'beta', 'gamma'])
     return dirCosines(cosA, cosB, cosC)
 
-def get_zenith_azimuth_from_dir_cos(gamma, alpha=None, beta=None, atype='deg'):
+def get_zenith_azimuth_from_dir_cos(gamma, alpha, beta, atype='deg'):
     """Returns the zenith and azimuth angles of the direction vector
     given the direction cosines gamma, alpha and/or beta
 
@@ -465,63 +473,49 @@ def get_zenith_azimuth_from_dir_cos(gamma, alpha=None, beta=None, atype='deg'):
     ----------
     gamma : float
         direction cosine, i.e. cos(C)
-    alpha : float, optional if ``beta`` is provided
+    alpha : float
         direction cosine, i.e. cos(A)
-    beta : float, optional if ``alpha`` is provided
+    beta : float
         direction cosine, i.e. cos(B)
+    atype : string
+        string code indicating whether to return the angles in
+        degrees ('deg') or radians ('rad')
 
     Returns
     -------
     zenith : float
         angle of the direction vector with respect to the positive z-axis
-        :math:`0 \leq \phi \leq \pi`
+        :math:`0 \leq \\theta \leq \pi`
     azimuth : float
         angle of the direction vector with respect to the positive x-axis
-        :math:`0 \leq \\theta \leq 2\pi`
+        :math:`0 \leq \phi \leq 2\pi`
 
     Examples
     --------
     >>> alpha, beta, gamma = 0.33682408883, 0.05939117461, 0.93969262078
-    >>> get_zenith_azimuth_from_dir_cos(gamma, alpha)
+    >>> get_zenith_azimuth_from_dir_cos(gamma, alpha, beta)
     (20.000000001 10.0000000188)
 
     Notes
     -----
-    1. The direction cosines (:math:`\\alpha, \\beta, \\gamma`),
-       azimuth (:math:`\\theta`) and zenith (:math:`\\phi`) are related
-       as follows:
+    The direction cosines (:math:`\\alpha, \\beta, \\gamma`),
+    azimuth (:math:`\phi`) and zenith (:math:`\\theta`) are related
+    as follows:
 
-       - :math:`\\alpha = cos(A) = sin(\\phi)cos(\\theta)`
-       - :math:`\\beta  = cos(B) = sin(\\phi)sin(\\theta)`
-       - :math:`\\gamma = cos(C) = cos(\\phi)`
-
-       where, A, B, C are angles that the wave vector ``k`` makes with
-       x, y, and z axis respectively.
+        - :math:`\\alpha = cos(A) = sin(\\theta)cos(\phi)`
+        - :math:`\\beta  = cos(B) = sin(\\theta)sin(\phi)`
+        - :math:`\\gamma = cos(C) = cos(\\theta)`
+    where, A, B, C are angles that the wave vector ``k`` makes with
+    x, y, and z axis respectively.
 
     See Also
     --------
     get_dir_cos_from_zenith_azimuth()
     """
-    if (alpha is None) and (beta is None):
-        raise ValueError, "Invalid input. Expecting either alpha or beta"
     if atype not in ['deg', 'rad']:
         raise ValueError, "Invalid angle type specification"
     zenith = _np.arccos(gamma)
-    if alpha is not None:
-        num = alpha
-        trigfunc = _np.arccos
-    else:
-        num = beta
-        trigfunc = _np.arcsin
-    # the following code-block is within warning context in order to handle
-    # error cases caused by numerics. For e.g. the computed zenith may
-    # sometime be 1.000000000000018 when the true value is really 1.0,
-    # but sin(1.000000000000018) is invalid
-    with _warnings.catch_warnings(record=True):
-        azimuth = trigfunc(num/_np.sin(zenith))
-        if _math.isnan(azimuth):
-            zenith = _np.round(zenith, 10)
-            azimuth = trigfunc(num/_np.sin(zenith))
+    azimuth = _np.arctan2(beta, alpha)
     rayAngle = _co.namedtuple('rayAngle', ['zenith', 'azimuth'])
     if atype=='deg':
         return rayAngle(_np.rad2deg(zenith), _np.rad2deg(azimuth))
@@ -549,6 +543,11 @@ def get_alpha_beta_gamma_set(alpha=None, beta=None, gamma=None, forceZero='none'
     -------
     direction_cosines : tuple
         (alpha, beta, gamma)
+
+    Warnings
+    --------
+    Only the positive values of the direction cosines are returned by this
+    function. A sign ambiguity is always present
 
     Notes
     -----
@@ -656,25 +655,23 @@ def _test_get_dir_cos_from_zenith_azimuth():
 def _test_get_zenith_azimuth_from_dir_cos():
     """Test get_zenith_azimuth_from_dir_cos() function"""
     alpha, beta, gamma = 0.33682408883, 0.05939117461, 0.93969262078
-    zenith, azimuth = get_zenith_azimuth_from_dir_cos(gamma, alpha)
+    zenith, azimuth = get_zenith_azimuth_from_dir_cos(gamma, alpha, beta)
     nt.assert_array_almost_equal(_np.array((zenith, azimuth)),
                                  _np.array((20.0, 10.0)), decimal=7)
-    zenith, azimuth = get_zenith_azimuth_from_dir_cos(gamma, beta=beta)
-    nt.assert_array_almost_equal(_np.array((zenith, azimuth)),
-                                 _np.array((20.0, 10.0)), decimal=7)
-    zenith, azimuth = get_zenith_azimuth_from_dir_cos(gamma, beta=beta,
+    zenith, azimuth = get_zenith_azimuth_from_dir_cos(gamma, alpha, beta,
                                                       atype='rad')
     nt.assert_array_almost_equal(_np.array((zenith, azimuth)),
                                  _np.array((0.349065850416, 0.17453292518)),
                                  decimal=7)
     try:
-        zenith, azimuth = get_zenith_azimuth_from_dir_cos(gamma, alpha,
+        zenith, azimuth = get_zenith_azimuth_from_dir_cos(gamma, alpha, beta,
                                                           atype='invalid')
     except ValueError: # as e:
         #nt.assert_string_equal(e, 'Invalid angle type specification')
         pass
     zenith, azimuth = get_zenith_azimuth_from_dir_cos(0.9950371902099892,
-                                                      alpha=0.0)
+                                                      0.0,
+                                                      0.099503719020998957)
     nt.assert_almost_equal(azimuth, 90.0, decimal=8)
     print("test_get_zenith_azimuth_from_dir_cos() is successful")
 
