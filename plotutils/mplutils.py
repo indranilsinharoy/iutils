@@ -219,7 +219,7 @@ def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3,
                 ax.spines[spine].set_position((ref, pos + offset))
 
 def format_stem_plot(mline, stlines, bline, mecol='#222222', mfcol='#555555', 
-                     mstyle='o', msize=5, mjoin='None', stcol='#f67088', 
+                     mstyle='o', msize=5, mjoin='None', stcol='#00BFFF', 
                      slw=1.6, bcol='#BBBBBB', blw=1.1, bstyle='--'):
     """format matplotlib stem plot 
 
