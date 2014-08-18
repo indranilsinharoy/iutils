@@ -218,9 +218,9 @@ def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3,
             for spine, offset in zip(allSpines, (left, right, top, bottom)):
                 ax.spines[spine].set_position((ref, pos + offset))
 
-def format_stem_plot(mline, stlines, bline, mecol='#222222', mfcol='#555555', 
-                     mstyle='o', msize=5, mjoin='None', stcol='#00BFFF', 
-                     slw=1.6, bcol='#BBBBBB', blw=1.1, bstyle='--'):
+def format_stem_plot(mline, stlines, bline, mecol='#222222', mfcol='#ff4000', 
+                     mstyle='o', msize=6, mjoin='None', stcol='#00BFFF', 
+                     slw=1.3, bcol='#BBBBBB', blw=1.1, bstyle='--'):
     """format matplotlib stem plot 
 
     Parameters
@@ -234,15 +234,21 @@ def format_stem_plot(mline, stlines, bline, mecol='#222222', mfcol='#555555',
     mecol : string, optional  
         markerline edge color, default = '#222222'
     mfcol : string, optional
-        markerline face color, default = '#555555'
+        markerline face color, default = '#ff4000'
     mstyle : string marker type, optional 
-        marker pattern , default = 'o' 
+        marker pattern , default = 'o'
+    msize : integer, optional 
+        marker size, default = 6 
     stcol : string, optional 
         stemlines color, default = '#f67088'
-    slw : integer, optional 
-        stemlines line width, default = 1.6
+    slw : float, optional 
+        stemlines line width, default = 1.3
     bcol : string, optional 
         baseline color, default = '#BBBBBB'
+    blw : float, optional 
+        baseline line width, default = 1.1
+    bstyle : string, optional 
+        baseline style, defualt = '--'
 
     Returns
     ------- 
