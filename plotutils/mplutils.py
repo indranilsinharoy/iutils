@@ -116,7 +116,7 @@ def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3,
         list of axes for transforming their spines
     remove : list of strings
         a list of spines to remove, such as ['left', 'top'] to remove
-        left and top spines.
+        left and top spines. Use ['all'] to remove all spines.
     stype : string
         indicating type of spine as per the following options:
         * 'center_data' = create 2-axis spines at data center 
@@ -136,6 +136,8 @@ def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3,
     """
     if axes is None:
         axes = [plt.gca(),]
+    elif not isinstance(axes, list):
+        axes = [axes, ]
     allSpines = ['left', 'right', 'top', 'bottom']
 
     # if set invisible
@@ -150,7 +152,7 @@ def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3,
     # Verify Remove list
     if remove:
         for r in remove:
-            if r not in allSpines:
+            if r not in allSpines + ['all']:
                 raise ValueError, 'Invalid remove types given'
     else:
         remove = []
@@ -190,6 +192,12 @@ def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3,
                 ax.spines[sp].set_color('#808080') # this is the value set in matplotlibrc for 'axes.edgecolor'
             # set zorder
             ax.spines[sp].zorder = zorder
+        if 'all' in remove:
+            ax.xaxis.set_ticks([])
+            ax.yaxis.set_ticks([])
+            for sp in allSpines:
+                ax.spines[sp].set_color('none')
+
         # Modify spine type
         if stype in ['center_data', 'center_axes']:
             ref = 'data' if stype == 'center_data' else 'axes'
@@ -218,8 +226,8 @@ def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3,
             for spine, offset in zip(allSpines, (left, right, top, bottom)):
                 ax.spines[spine].set_position((ref, pos + offset))
 
-def format_stem_plot(mline, stlines, bline, mecol='#222222', mfcol='#ff4000', 
-                     mstyle='o', msize=6, mjoin='None', stcol='#00BFFF', 
+def format_stem_plot(mline, stlines, bline, mecol='#222222', mfcol='#F52080', 
+                     mstyle='o', msize=6, mjoin='None', stcol='#0080FF', 
                      slw=1.3, bcol='#BBBBBB', blw=1.1, bstyle='--'):
     """format matplotlib stem plot 
 
@@ -234,13 +242,13 @@ def format_stem_plot(mline, stlines, bline, mecol='#222222', mfcol='#ff4000',
     mecol : string, optional  
         markerline edge color, default = '#222222'
     mfcol : string, optional
-        markerline face color, default = '#ff4000'
+        markerline face color, default = '#F52080'
     mstyle : string marker type, optional 
         marker pattern , default = 'o'
     msize : integer, optional 
         marker size, default = 6 
     stcol : string, optional 
-        stemlines color, default = '#f67088'
+        stemlines color, default = '#0080FF'
     slw : float, optional 
         stemlines line width, default = 1.3
     bcol : string, optional 
