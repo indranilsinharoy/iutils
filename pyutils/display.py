@@ -10,10 +10,10 @@
 # Licence:       MIT License
 #-------------------------------------------------------------------------------
 from __future__ import division, print_function
-import Tkinter
+import Tkinter as _Tk
 
 def getPrimaryScreenResolution():
-    root = Tkinter.Tk()
+    root = _Tk.Tk()
     root.withdraw()
     screen_width = root.winfo_screenwidth()
     screen_height = root.winfo_screenheight()
@@ -29,7 +29,7 @@ def _test_getPrimaryScreenResolution():
 
 
 if __name__ == '__main__':
-    import numpy.testing as nt
+    import numpy.testing as _nt
     from numpy import set_printoptions
     set_printoptions(precision=4, linewidth=85)  # for visual output in manual tests.
     _test_getPrimaryScreenResolution()

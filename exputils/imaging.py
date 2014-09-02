@@ -28,9 +28,13 @@ def inch2mm(val):
     return val*25.4
 
 def ppi2microns(val):
-    """convert LCD display resolution in PPI to microns"""
+    """convert LCD display resolution in PPI to microns, which is the size
+    of each display pixel. """
     return 1000*25.4/val
 
+def ppi2ppm(val):
+    """convert pixels per inch to pixels per mm"""
+    return val/25.4
 
 def get_ppi(device='surface_pro3'):
     """get display device resolution of known devices
@@ -39,7 +43,7 @@ def get_ppi(device='surface_pro3'):
     ----------
     device : string, optional
         name of the device. Options are -- 'surface_pro3', 'surface_pro2',
-        'surface_pro1', 'nexus7',
+        'surface_pro1', 'nexus7', 'retina', 'vaioVPCF1'
     """
     ppi = None
     if device == 'surface_pro3':
@@ -50,6 +54,10 @@ def get_ppi(device='surface_pro3'):
         ppi = 207.82
     if device == 'nexus7':
         ppi = 323
+    if device == 'retina':
+        ppi = 220
+    if device == 'vaioVPCF1':
+        ppi = 134.3236
     return ppi
 
 # first order imaging calculations
@@ -77,8 +85,6 @@ def mag(f, u=None, v=None):
         return f/(u - f)
 
 
-
-
 # test functions
 
 def _test_mm2inch():
@@ -91,6 +97,9 @@ def _test_ppi2microns():
     ppi = get_ppi('surface_pro3')
     mic = ppi2microns(ppi)
     _nt.assert_almost_equal(117.592592593, mic)
+    ppi = get_ppi('vaioVPCF1')
+    mic = ppi2microns(ppi)
+    _nt.assert_almost_equal(189.095587075, mic)
 
 def _test_mag():
     obj_dist = 3000
