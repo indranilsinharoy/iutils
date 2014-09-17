@@ -20,7 +20,7 @@ from subprocess import call
 
 def is64bit():
     """Returns True if 64 bit, False if not (i.e. if 32 bit Python environment)
-    
+
     Usage: is64bit()->ret
 
     Parameters
@@ -30,7 +30,7 @@ def is64bit():
     Returns
     -------
     ret : bool
-        True if 64 bit environment, False otherwise.    
+        True if 64 bit environment, False otherwise.
     """
     # As per the discussion at (http://stackoverflow.com/questions/1842544/how-do-i-
     # detect-if-python-is-running-as-a-64-bit-application) I think the following is
@@ -47,8 +47,8 @@ def find_zero_crossings(f, a, b, func_args=(), n=100):
 def c_binary_string(n, numBits=32):
     """Return `n` as a clean 32-bit/64-bit binary number, without a leading '0b'.
 
-    Usage: c_binary_string(n [,numBits])->binary_string 
-    
+    Usage: c_binary_string(n [,numBits])->binary_string
+
     Parameters
     ----------
     n : positive or negative integer
@@ -93,6 +93,7 @@ def _getMD5(filename):
     with open(filename) as f:
         d = f.read()
     h = hashlib.md5(d).hexdigest() # HEX string representation of the hash
+    return h
 
 
 def nbconvert():
@@ -111,7 +112,7 @@ def nbconvert():
             count_files_successfully_converted += 1
         else:
             failedFiles.append(f)
-            
+
     # Print some human readable feedback
     print("\n")
     print("*******************************************")
@@ -135,11 +136,11 @@ def nbconvert():
 def _test_is64bit():
     """For obvious reasons, this is not an automated test. i.e. it requires a visual inspection"""
     print("\nTest for 32/64 bitness of Python system")
-    bitness = 64 if is64bit() else 32    
+    bitness = 64 if is64bit() else 32
     print("This is %s bit system" % bitness)
- 
- 
-    
+
+
+
 if __name__=="__main__":
     import numpy.testing as nt
     from numpy import set_printoptions

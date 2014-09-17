@@ -9,11 +9,12 @@
 # Copyright:     (c) Indranil Sinharoy 2012, 2013, 2014
 # Licence:       MIT License
 #-------------------------------------------------------------------------------
-import os
-from PIL import Image
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
+from __future__ import print_function, division
+import os as _os
+from PIL import Image as _Image
+import numpy as _np
+import matplotlib.pyplot as _plt
+import matplotlib.cm as _cm
 
 
 def cv2mpl(im):
@@ -32,34 +33,41 @@ def cv2mpl(im):
     image : ndarray
         color image as represented in Matplotlib image
     """
-    nm = np.zeros(im.shape, dtype=im.dtype)
+    nm = _np.zeros(im.shape, dtype=im.dtype)
     nm[:,:,0] = im[:,:,2]
     nm[:,:,1] = im[:,:,1]
     nm[:,:,2] = im[:,:,0]
     return nm
 
-def get_imlist(file_path, image_type='JPEG'):
+def get_imlist(filePath, itype='jpeg'):
     """Returns a list of filenames for all images of specified type in a
     directory
 
     Parameters
     ----------
-    file_path : string
+    filePath : string
         full path name of the directory to be searched
-    image_type : string ('JPEG', 'TIFF', 'PNG')
-        type of images to be searched, options are -- JPEG, TIFF, PNG
+    itype : string, optional
+        type of images to be searched, for example -- 'jpeg', 'tiff', 'png',
+        'dng', 'bmp'
 
     Returns
     -------
-    image_files : list of strings
+    imageFiles : list of strings
         list of image filenames with full path.
     """
-    ext = '.jpg'
-    if image_type == 'TIFF':
-        ext = '.tiff'
-    elif image_type == 'PNG':
-        ext = '.png'
-    return [os.path.join(file_path,f) for f in os.listdir(file_path) if f.endswith(ext)]
+    imlist = []
+    opJoin = _os.path.join
+    dirList = _os.listdir(filePath)
+    if itype in ['jpeg', 'jpg']:
+        extensions = ['.jpg', '.jpeg', '.jpe',]
+    elif itype in ['tiff', 'tif']:
+        extensions = ['.tiff', '.tif']
+    else:
+        extensions = [''.join(['.', itype.lower()]), ]
+    for ext in extensions:
+        imlist += [opJoin(filePath, f) for f in dirList if f.lower().endswith(ext)]
+    return imlist
 
 """
 #Alternative get_imlist using glob module
@@ -68,13 +76,27 @@ def alt_get_imlist(pat):
     return[os.path.join(pat,f) for f in glob.glob("*.jpg")]
 """
 
-def imresize(im, sz):
-    """Resize an image array using PIL"""
-    pil_im = Image.fromarray(np.uint8(im))
-    return np.array(pil_im.resize(sz))
+def imresize(image, size, rsfilter='ANTIALIAS'):
+    """Resize an image array using PIL
+
+    Parameters
+    ----------
+    image : ndarray
+        input image to resize
+    size : tuple
+        the size of the output image (width, height)
+    filter : PIL filter
+        'NEAREST' for nearest neighbour, 'BILINEAR' for linear interpolation
+        in a 2x2 environment, 'BICUBIC' for cubic spline interpolation in a
+        4x4 environment, or 'ANTIALIAS' for a high-quality downsampling filter.
+    """
+    pil_im = _Image.fromarray(_np.uint8(image))
+    pilfilter = {'NEAREST':_Image.NEAREST, 'BILINEAR':_Image.BILINEAR,
+                 'BICUBIC':_Image.BICUBIC, 'ANTIALIAS':_Image.ANTIALIAS}
+    return _np.array(pil_im.resize(size, pilfilter['rsfilter']))
 
 
-def histeq(im, nbr_bins=256):
+def histeq(image, nbr_bins=256):
     """Histogram equalization of a grayscale image.
 
     Parameters
@@ -96,14 +118,12 @@ def histeq(im, nbr_bins=256):
     by J.E. Solem
     """
     # get image histogram
-    imhist, bins = np.histogram(im.flatten(),nbr_bins,density=True) #returns normalized pdf
+    imhist, bins = _np.histogram(image.flatten(), nbr_bins, density=True) #returns normalized pdf
     cdf = imhist.cumsum()      # cumulative distribution function
     cdf = 255.0*cdf / cdf[-1]  # normalize
-
     # use linear interpolation of cdf to find new pixel values
-    im2 = np.interp(im.flatten(), bins[:-1], cdf)
-
-    return im2.reshape(im.shape), cdf
+    im2 = _np.interp(image.flatten(), bins[:-1], cdf)
+    return im2.reshape(image.shape), cdf
 
 def compute_average(imlist):
     """Compute the average of a list of images
@@ -119,47 +139,51 @@ def compute_average(imlist):
     by J.E. Solem
     """
     # Open first image and make into array of type float
-    averageim = np.array(Image.open(imlist[0]),'f')
+    averageim = _np.array(_Image.open(imlist[0]), 'f')
     divisor = 1.0
-
     for imname in imlist[1:]:
         try:
-            averageim += np.array(Image.open(imname))
+            averageim += _np.array(_Image.open(imname))
             divisor +=1
         except:
-            print imname + '...skipped'
+            print(imname + '...skipped')
     averageim /= divisor
     # return average as uint8
-    return np.array(averageim,'uint8')
+    return _np.array(averageim,'uint8')
 
-def myimshow(image, bGray=False, fig=None, axes=None, subplot=None, xlabel=None, ylabel=None):
-    """My own redimentary image display routine"""
+def imshow(image, bGray=False, fig=None, axes=None, subplot=None, interpol=None,
+           xlabel=None, ylabel=None):
+    """Rudimentary image display routine, for quick display of images without
+    the axes
+    """
     if (subplot == None):
         subplot = int(111)
-    if(fig==None): #Open a figure window
-        fig = plt.figure()
+    if(fig==None):
+        fig = _plt.figure()
         axes = fig.add_subplot(subplot)
     elif(axes==None):
         axes = fig.add_subplot(subplot)
     if(bGray==True):
-        plt.gray()
-        print '\ngray'
-    #plot the image
-    imPtHandle = plt.imshow(image,cm.gray)
-    #get the image height and width to set the axes limits
-    pix_height = image.shape[0]
-    pix_width = image.shape[1]
-    #Set the xlim and ylim to constrain the plot
-    axes.set_xlim(0,pix_width-1)
-    axes.set_ylim(pix_height-1,0)
-    #Set the xlabel and ylable if provided
+        _plt.gray()
+        # print '\ngray'
+    # plot the image
+    imPtHandle = _plt.imshow(image, _cm.gray, interpolation=interpol)
+    # get the image height and width to set the axes limits
+    try:
+        pix_height, pix_width = image.shape
+    except:
+        pix_height, pix_width, _ = image.shape
+    # Set the xlim and ylim to constrain the plot
+    axes.set_xlim(0, pix_width-1)
+    axes.set_ylim(pix_height-1, 0)
+    # Set the xlabel and ylable if provided
     if(xlabel != None):
         axes.set_xlabel(xlabel)
     if(ylabel != None):
         axes.set_ylabel(ylabel)
-    #Make the ticks to empty list
-    axes.get_xaxis().set_ticks([])
-    axes.get_yaxis().set_ticks([])
+    # Make the ticks to empty list
+    axes.xaxis.set_ticks([])
+    axes.yaxis.set_ticks([])
     return imPtHandle, fig, axes
 
 

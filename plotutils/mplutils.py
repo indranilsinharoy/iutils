@@ -29,8 +29,8 @@ class arrow(object):
             2-d vector representing end point of the arrow
 
         Returns
-        ------- 
-        None 
+        -------
+        None
         """
         if fig_object != None:
             self.fig = None
@@ -106,9 +106,9 @@ def find_zero_crossings(f, a, b, func_args=(), n=100):
     return zero_crossings
 
 
-def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3, 
+def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3,
                setinvisible=False):
-    """Sets the spines of a matplotlib figure 
+    """Sets the spines of a matplotlib figure
 
     Parameters
     ----------
@@ -119,14 +119,14 @@ def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3,
         left and top spines. Use ['all'] to remove all spines.
     stype : string
         indicating type of spine as per the following options:
-        * 'center_data' = create 2-axis spines at data center 
+        * 'center_data' = create 2-axis spines at data center
         * 'center_axes' = center 2-axis spines at axes center
-    soffset : list of floats  
-        list of spine offsets ``(left, right, top, bottom)``. The offset 
-        is with respect to ``stype``. If ``stype`` is not provided, then 
-        the offset is with respect to the axes. The offset values can 
-        be negative or positive. If ``stype`` is ``center_axes`` or 
-        ``None``, the offset values range is between -1.0 and 1.0 
+    soffset : list of floats
+        list of spine offsets ``(left, right, top, bottom)``. The offset
+        is with respect to ``stype``. If ``stype`` is not provided, then
+        the offset is with respect to the axes. The offset values can
+        be negative or positive. If ``stype`` is ``center_axes`` or
+        ``None``, the offset values range is between -1.0 and 1.0
     zorder : integer (between 1 and 20)
         set the zorder of the spines (Default = 3)
     setinvisible : bool
@@ -145,6 +145,8 @@ def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3,
         for ax in axes:
             for sp in allSpines:
                 ax.spines[sp].set_visible(False)
+            ax.set_frame_on(False)
+            ax.patch.set_visible(False)
             ax.xaxis.set_ticks([])
             ax.yaxis.set_ticks([])
         return
@@ -156,12 +158,12 @@ def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3,
                 raise ValueError, 'Invalid remove types given'
     else:
         remove = []
-    
+
     # Verify stype
     if stype:
         if stype not in ['center_data', 'center_axes']: # there could be other variations in future
             raise ValueError, 'Invalid stype given'
-    
+
     # Define what to do if stype is either 'center_data' or 'center_axes'
     if stype:
         if stype in ['center_data', 'center_axes']:
@@ -203,7 +205,7 @@ def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3,
             ref = 'data' if stype == 'center_data' else 'axes'
             pos = 0 if ref == 'data' else 0.5
             ax.yaxis.set_ticks_position('left')
-            ax.spines['left'].set_position((ref, pos)) 
+            ax.spines['left'].set_position((ref, pos))
             ax.xaxis.set_ticks_position('bottom')
             ax.spines['bottom'].set_position((ref, pos))
 
@@ -211,7 +213,7 @@ def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3,
         if soffset:
             if len(soffset) > 3:
                 left, right, top, bottom = soffset
-                ax.autoscale(enable=True, axis='both', tight=True) 
+                ax.autoscale(enable=True, axis='both', tight=True)
             elif len(soffset) > 2:
                 [left, right, top], bottom = soffset, 0
                 ax.autoscale(enable=True, axis='both', tight=True)
@@ -226,44 +228,44 @@ def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3,
             for spine, offset in zip(allSpines, (left, right, top, bottom)):
                 ax.spines[spine].set_position((ref, pos + offset))
 
-def format_stem_plot(mline, stlines, bline, mecol='#222222', mfcol='#F52080', 
-                     mstyle='o', msize=6, mjoin='None', stcol='#0080FF', 
+def format_stem_plot(mline, stlines, bline, mecol='#222222', mfcol='#F52080',
+                     mstyle='o', msize=6, mjoin='None', stcol='#0080FF',
                      slw=1.3, bcol='#BBBBBB', blw=1.1, bstyle='--'):
-    """format matplotlib stem plot 
+    """format matplotlib stem plot
 
     Parameters
-    ---------- 
-    mline : markerline object 
-        marker line returned by stem() function 
-    stlines : stemlines object 
-        stem lines returned by stem() function 
-    bline : baseline object  
-        base line returned by stem() function 
-    mecol : string, optional  
+    ----------
+    mline : markerline object
+        marker line returned by stem() function
+    stlines : stemlines object
+        stem lines returned by stem() function
+    bline : baseline object
+        base line returned by stem() function
+    mecol : string, optional
         markerline edge color, default = '#222222'
     mfcol : string, optional
         markerline face color, default = '#F52080'
-    mstyle : string marker type, optional 
+    mstyle : string marker type, optional
         marker pattern , default = 'o'
-    msize : integer, optional 
-        marker size, default = 6 
-    stcol : string, optional 
+    msize : integer, optional
+        marker size, default = 6
+    stcol : string, optional
         stemlines color, default = '#0080FF'
-    slw : float, optional 
+    slw : float, optional
         stemlines line width, default = 1.3
-    bcol : string, optional 
+    bcol : string, optional
         baseline color, default = '#BBBBBB'
-    blw : float, optional 
+    blw : float, optional
         baseline line width, default = 1.1
-    bstyle : string, optional 
+    bstyle : string, optional
         baseline style, defualt = '--'
 
     Returns
-    ------- 
+    -------
     None
 
     Examples
-    -------- 
+    --------
     >>> fig, ax = plt.subplots(1, 1)
     >>> x = np.linspace(-np.pi, np.pi)
     >>> y = np.sin(x)

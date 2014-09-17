@@ -220,6 +220,7 @@ class scheimpflug(object):
             self._lensImgAng_d = lensImgAng*180/_math.pi
         self._lensPosfAng_r = None
         self._lensPosfAng_d = None
+        # modify this so that the lensPosfAng is calculated if lens lensImgAng is set
 
     @property
     def f(self):

@@ -13,6 +13,17 @@ from __future__ import division, print_function
 import Tkinter as _Tk
 
 def getPrimaryScreenResolution():
+    """function returns the screen resolution in pixels as (width, height)
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    screen_resolution : tuple
+        (width, height)
+    """
     root = _Tk.Tk()
     root.withdraw()
     screen_width = root.winfo_screenwidth()
