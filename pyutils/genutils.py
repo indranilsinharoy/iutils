@@ -13,8 +13,8 @@
 #-------------------------------------------------------------------------------
 from __future__ import division, print_function
 import sys
-from os import listdir, path, getcwd
-import hashlib
+from os import listdir as _listdir, getcwd as _getcwd
+import hashlib as _hashlib
 from subprocess import call
 
 
@@ -71,11 +71,6 @@ def c_binary_string(n, numBits=32):
     else:
         return '{0:0>64}'.format(bin(n)[2:])
 
-def trial():
-     cdir = getcwd()
-     print(cdir)
-
-
 def _convert(f):
     """return 1 on success, 0 on fail"""
     try:
@@ -92,16 +87,16 @@ def _getMD5(filename):
     """returns the MD5 signature of the file"""
     with open(filename) as f:
         d = f.read()
-    h = hashlib.md5(d).hexdigest() # HEX string representation of the hash
+    h = _hashlib.md5(d).hexdigest() # HEX string representation of the hash
     return h
 
 
 def nbconvert():
     # Get the current directory
     #cdir = path.dirname(path.realpath(__file__))
-    cdir =  getcwd()
+    cdir =  _getcwd()
     # Get a list of .ipynb files
-    files2convert = [f for f in listdir(cdir) if f.endswith('.ipynb')]
+    files2convert = [f for f in _listdir(cdir) if f.endswith('.ipynb')]
     # Convert the files within a try-except block
     count_files_successfully_converted = 0
     failedFiles = []
@@ -128,7 +123,33 @@ def nbconvert():
         for f in failedFiles:
             print(f)
     print("\nDONE!")
-    s = raw_input("Press ENTER to close the appliation ...")
+    raw_input("Press ENTER to close the appliation ...")
+
+def remove_duplicates_in_list(seq):
+    """Removes and returns a new list with duplicate elements removed and the
+    order of elements in the sequence is preserved
+
+    Parameters
+    ----------
+    seq : list
+        the list
+
+    Returns
+    -------
+    newSeq : list
+        the new list with duplicate elements removed
+
+    Examples
+    --------
+    >>> a = [1, 2, 4, 1, 2, 3, 6, 2, 2, 5, 5, 10, 3, 20, 21, 20, 8, 6]
+    >>> gnu.remove_duplicates_in_list(a)
+    [1, 2, 4, 3, 6, 5, 10, 20, 21, 8]
+    """
+    seen = set()
+    seen_add = seen.add
+    newSeq = [x for x in seq if x not in seen and not seen_add(x)]
+    return newSeq
+
 
 # ---------------------------
 #   TEST FUNCTIONS
@@ -139,10 +160,16 @@ def _test_is64bit():
     bitness = 64 if is64bit() else 32
     print("This is %s bit system" % bitness)
 
+def _test_remove_duplicates_in_list():
+    a = [1, 2, 4, 1, 2, 3, 6, 2, 2, 5, 5, 10, 3, 20, 21, 20, 8, 6]
+    exp_ret = [1, 2, 4, 3, 6, 5, 10, 20, 21, 8]
+    ret = remove_duplicates_in_list(a)
+    _nt.assert_array_equal(exp_ret, ret)
 
 
 if __name__=="__main__":
-    import numpy.testing as nt
+    import numpy.testing as _nt
     from numpy import set_printoptions
     set_printoptions(precision=4, linewidth=85)  # for visual output in manual tests.
     _test_is64bit()
+    _test_remove_duplicates_in_list()

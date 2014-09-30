@@ -10,11 +10,12 @@
 # Copyright:     (c) Indranil Sinharoy 2013
 # Licence:       MIT License
 #-------------------------------------------------------------------------------
-from __future__ import division
-import numpy as np
-from scipy import optimize
-import matplotlib.pyplot as plt
-
+from __future__ import division, print_function
+import numpy as _np
+from scipy import optimize as _optimize
+import matplotlib.pyplot as _plt
+import matplotlib.cm as _cm 
+from matplotlib.widgets import  RectangleSelector as _RectangleSelector
 
 class arrow(object):
     def __init__(self, start, end, a_col=(0.0,0.0,0.0), cone_scale=1.0,
@@ -39,14 +40,14 @@ class arrow(object):
         arr_head2length_ratio = 0.1
         dx = (end[0]-start[0])
         dy = (end[1]-start[1])
-        arr_length = np.sqrt(dx**2.0 + dy**2.0)
+        arr_length = _np.sqrt(dx**2.0 + dy**2.0)
 
         alpha = alpha
         width = 0.01
         head_width = 0.15
         head_length = arr_head2length_ratio*arr_length
 
-        self.twoDarrow = plt.arrow(start[0], start[1], dx, dy, color=a_col,
+        self.twoDarrow = _plt.arrow(start[0], start[1], dx, dy, color=a_col,
                                    alpha=alpha, width=width, head_width=head_width,
                                    head_length=head_length, length_includes_head=True)
 
@@ -83,17 +84,17 @@ def find_zero_crossings(f, a, b, func_args=(), n=100):
     (1) Zero crossings of a function that takes no arguments
 
     >>> mpu.find_zero_crossings(np.cos -2*np.pi, 2*np.pi)
-    [-4.71238898038469, -1.5707963267948966, 1.5707963267948963, 4.71238898038469]
+    [-4.712388980, -1.57079632679, 1.57079632679, 4.712388980]
 
     (2) Zero crossing of a function that takes one argument
 
     >>> def func(x, a):
     >>>     return integrate.quad(lambda t: special.j1(t)/t, 0, x)[0] - a
     >>> mpu.find_zero_crossings(func_t2, 1e-10, 25, func_args=(1,))
-    [2.65748482456961, 5.672547403169345, 8.759901449672629, 11.87224239501442, 14.99576753285061, 18.12516624215325, 21.258002755273516, 24.393014762783487]
+    [2.65748, 5.67254, 8.75990, 11.87224, 14.99576, 18.12516, 21.25800, 24.39301]
     """
     # Evaluate the function at `n` points on the real line within the interval [a,b]
-    real_line = np.linspace(a, b, n)
+    real_line = _np.linspace(a, b, n)
     fun_vals = [f(x, *func_args) for x in real_line]
     sign_change_arr = [a]   # initialize the first element
     for i in range(1, len(fun_vals)):
@@ -101,7 +102,7 @@ def find_zero_crossings(f, a, b, func_args=(), n=100):
             sign_change_arr.append(real_line[i])
     zero_crossings = []     # initialize empty list
     for j in range(1,len(sign_change_arr)):
-        zero_crossings.append(optimize.brentq(f, sign_change_arr[j-1],
+        zero_crossings.append(_optimize.brentq(f, sign_change_arr[j-1],
                               sign_change_arr[j], args=func_args))
     return zero_crossings
 
@@ -135,7 +136,7 @@ def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3,
         are trying to print some target image with exact DPI values.
     """
     if axes is None:
-        axes = [plt.gca(),]
+        axes = [_plt.gca(),]
     elif not isinstance(axes, list):
         axes = [axes, ]
     allSpines = ['left', 'right', 'top', 'bottom']
@@ -266,7 +267,7 @@ def format_stem_plot(mline, stlines, bline, mecol='#222222', mfcol='#F52080',
 
     Examples
     --------
-    >>> fig, ax = plt.subplots(1, 1)
+    >>> fig, ax = _plt.subplots(1, 1)
     >>> x = np.linspace(-np.pi, np.pi)
     >>> y = np.sin(x)
     >>> mline, stlines, bline = ax.stem(x, y)
@@ -287,6 +288,217 @@ def format_stem_plot(mline, stlines, bline, mecol='#222222', mfcol='#F52080',
     bline.set_linestyle(bstyle)
     bline.set_linewidth(blw)
     bline.set_color(bcol)
+    
+def imshow(image, bGray=False, fig=None, axes=None, subplot=None, interpol=None,
+           xlabel=None, ylabel=None):
+    """Rudimentary image display routine, for quick display of images without
+    the axes
+    """
+    if (subplot == None):
+        subplot = int(111)
+    if(fig==None):
+        fig = _plt.figure()
+        axes = fig.add_subplot(subplot)
+    elif(axes==None):
+        axes = fig.add_subplot(subplot)
+    if(bGray==True):
+        _plt.gray()
+        # print '\ngray'
+    # plot the image
+    imPtHandle = _plt.imshow(image, _cm.gray, interpolation=interpol)
+    # get the image height and width to set the axes limits
+    try:
+        pix_height, pix_width = image.shape
+    except:
+        pix_height, pix_width, _ = image.shape
+    # Set the xlim and ylim to constrain the plot
+    axes.set_xlim(0, pix_width-1)
+    axes.set_ylim(pix_height-1, 0)
+    # Set the xlabel and ylable if provided
+    if(xlabel != None):
+        axes.set_xlabel(xlabel)
+    if(ylabel != None):
+        axes.set_ylabel(ylabel)
+    # Make the ticks to empty list
+    axes.xaxis.set_ticks([])
+    axes.yaxis.set_ticks([])
+    return imPtHandle, fig, axes
+
+class ImageComparator(object):
+    def __init__(self, numSubPlots, Hlist, fsize=None, dpi=None):
+        """Image Comparator class for comparing sections of images plotted
+        in adjacent subplots. The image coordinates are related through a
+        specified homography
+
+        Parameters
+        ----------
+        numSubPlots : integer
+            number of sub-plots
+        Hlist : list
+            list of homography matrices that relates the master axis (subplot)
+            to the slave subplots. The length of ``Hlist``, i.e. the number
+            of H matrices should be 1 less than the total number of subplots.
+        fsize : tuple, optional
+            (width, height) in inches of the figure
+        dpi : tuple, optional
+            DPI resolution of the figure
+        """
+        if len(Hlist) != numSubPlots - 1:
+            raise ValueError("The number of H matrices should be 1 less than "
+                             "the number of subplots.")
+        fig, axes = _plt.subplots(nrows=1, ncols=numSubPlots, figsize=fsize)
+        self._fig = fig
+        self._axlist = list(axes.flat)
+        self._masterAx = self._axlist[0]
+        self._Hlist = [_np.identity(3), ]  # dummy H for master to master
+        self._Hlist = self._Hlist + Hlist
+        # axis limit variables
+        self._masterAxNativeY0 = None
+        self._masterAxNativeY1 = None
+        self._masterAxNativeX0 = None
+        self._masterAxNativeX1 = None
+        self._masterAxPrevY0 = None
+        self._masterAxPrevY1 = None
+        self._masterAxPrevX0 = None
+        self._masterAxPrevX1 = None
+        fig.tight_layout()
+        # Rectangle selector and key press event
+        self._rs = _RectangleSelector(self._masterAx, self._on_rec_draw, 'box')
+        fig.canvas.mpl_connect('key_press_event', self._key_press)
+
+    def imshow(self, image, subPlotNumber, colmap=None, title=None):
+        """method of ``ImageComparator`` to render a particular subplot
+
+        Parameters
+        ----------
+        image : ndarray
+            either a gray-level or a color RGB image to show in the particular
+            subplot identified by ``subPlotNumber``
+        subPlotNumber : integer
+            the integer number representing the subplot STARTING WITH 0!!!
+        colmap : matplotlib colormap, optional
+            matplotlib-type colormap
+        title : string, optional
+            title of the subplot
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        Just like plotting in Matplotlib, use the ``show()`` method of
+        ``ImageComparator`` to display the figure.
+        """
+        ax = self._axlist[subPlotNumber]
+        imp = ax.imshow(image, interpolation='none')
+        if colmap:
+            imp.set_cmap(colmap)
+        # TODO!! How to handle data limits???
+        ylim, xlim = image.shape[:2]
+        ylim = ylim - 1
+        xlim = xlim - 1
+        ax.set_xlim(0, xlim)
+        ax.set_ylim(ylim, 0)
+        if title:
+            ax.set_title(title)
+        if ax == self._masterAx:
+            self._masterAxNativeY0 = 0
+            self._masterAxNativeY1 = ylim
+            self._masterAxNativeX0 = 0
+            self._masterAxNativeX1 = xlim
+            self._masterAxPrevY0 = 0
+            self._masterAxPrevY1 = ylim
+            self._masterAxPrevX0 = 0
+            self._masterAxPrevX1 = xlim
+        _plt.draw()
+
+    def _on_rec_draw(self, pos0, pos1):
+        """internal callback function linked to RectangleSelector, called
+        when the user selects a rectangular region in the image using the
+        mouse
+        """
+        x0, x1 = pos0.xdata, pos1.xdata
+        y0, y1 = pos0.ydata, pos1.ydata
+        if (y1 > y0) and (x1 > x0):
+            self._redraw_axes(x0, x1, y0, y1)
+
+    def _redraw_axes(self, x0, x1, y0, y1):
+        """internal function to re-draw the axes to only show the selected
+        region of the image in the master subplot
+
+        x0, x1, y0, y1 are the coordinates in the master axis/subplot
+        """
+        # redraw the axes of the master axis
+        ax = self._masterAx
+        self._masterAxPrevX0, self._masterAxPrevX1 = ax.get_xlim()
+        self._masterAxPrevY1, self._masterAxPrevY0 = ax.get_ylim()
+        ax.set_xlim(x0, x1)
+        ax.set_ylim(y1, y0)
+        # propagate change to all other axis
+        numSubplots = len(self._axlist)
+        for i in range(1, numSubplots):
+            axSlv = self._axlist[i]
+            H = self._Hlist[i]
+            x0t, x1t, y0t, y1t = self._get_xlim_and_ylim(H, x0, x1, y0, y1)
+            #x0t, x1t, y0t, y1t = int(x0t), int(x1St), int(y0t), int(y1t)
+            print("\nFrom x0, x1, y0, y1 :\n", x0, x1, y0, y1)
+            print("\nTo  x0t, x1t, y0t, y1t:\n ", x0t, x1t, y0t, y1t)
+            print("\nFrom row and col range:", y1 - y0, x1 - x0)
+            print("\nTo row and col range:", y1t - y0t, x1t - x0t)
+            axSlv.set_xlim(x0t, x1t)
+            axSlv.set_ylim(y1t, y0t)
+        _plt.draw()
+
+    def _key_press(self, event):
+        """internal call-back function that is called when a key is pressed
+        """
+        key = event.key
+        backKeys = ['b', 'B', 'backspace', 'left']
+        homeKeys = ['h', 'H', 'home']
+        if key in backKeys:
+            self._step_back()
+        elif key in homeKeys:
+            self._go_home()
+        elif key == 'escape':
+            _plt.close(self._fig)
+
+    def _step_back(self):
+        """internal function called when user selects `backspace`, `b`, `B`, or
+        `left` arrow keys
+        """
+        self._redraw_axes(self._masterAxPrevX0, self._masterAxPrevX1,
+                          self._masterAxPrevY0, self._masterAxPrevY1)
+
+    def _go_home(self):
+        """internal function called when user selects `h`, `H` or `home`
+        keys
+        """
+        self._redraw_axes(self._masterAxNativeX0, self._masterAxNativeX1,
+                          self._masterAxNativeY0, self._masterAxNativeY1)
+
+    @staticmethod
+    def _get_xlim_and_ylim(H, x0, x1, y0, y1):
+        """internal function used to calculate the new axis limits of the
+        subplots based on the homographies and axis limits of the master
+        subplot.
+
+        x0, x1, y0, y1 are the coordinates in the master axis/subplot
+        """
+        fp = _np.array([[x0, x1], [y0, y1], [1, 1]])
+        tp = _np.dot(H, fp)       
+        tp = tp/tp[-1] # normalize
+        print("Debugging printing")
+        print("\nfp:\n", fp)
+        print("\ntp:\n", tp)
+        print("\nH:\n", H)
+        x0t, x1t, y0t, y1t = tp[0,0], tp[0,1], tp[1,0], tp[1,1]
+        return x0t, x1t, y0t, y1t
+
+    @staticmethod
+    def show():
+        """method to render the figure window"""
+        _plt.show()
 
 # ------------------------------------------------------------------------
 #           TESTING FUNCTIONS
@@ -294,11 +506,11 @@ def format_stem_plot(mline, stlines, bline, mecol='#222222', mfcol='#F52080',
 
 def _test_arrow():
     #test arrow with matplotlib figure
-    fig = plt.figure("myfigure",facecolor='white')
+    fig = _plt.figure("myfigure",facecolor='white')
     ax = fig.add_subplot(111)
     ax.set_xlim(-5,5)
     ax.set_ylim(-5,5)
-    plt.grid()
+    _plt.grid()
     #Test drawing the arrows in 2D space
     arrow((0,0),(2,2),a_col=(0.0,0.0,0.0))
     arrow((0,0),(-2,2),a_col=(1.0,0.0,0.0))
@@ -306,10 +518,10 @@ def _test_arrow():
     a4 = arrow((0,0),(-3,-3),a_col=(0.0,1.0,1.0))
     a4.twoDarrow.set_linestyle('dashed')
     #passing numpy array vectors
-    ori = np.array((0,0))
-    v1 = np.array((3,-3))
+    ori = _np.array((0,0))
+    v1 = _np.array((3,-3))
     arrow(ori,v1,'c')
-    plt.show()
+    _plt.show()
 
 def _test_find_zero_crossings():
     """test find_zero_crossings function"""
@@ -321,14 +533,14 @@ def _test_find_zero_crossings():
     zero_cross = find_zero_crossings(func_t1, 1e-10, 25)
     exp_zc = [2.65748482456961, 5.672547403169345, 8.759901449672629, 11.87224239501442,
               14.99576753285061, 18.12516624215325, 21.258002755273516, 24.393014762783487]
-    nt.assert_array_almost_equal(np.array(zero_cross), np.array(exp_zc), decimal=5)
+    nt.assert_array_almost_equal(_np.array(zero_cross), _np.array(exp_zc), decimal=5)
     print("... find_zero_crossings OK for zero-argument function")
     # test for function with one argument
     def func_t2(x, a):
         """Computes Integrate [j1(t)/t, {t, 0, x}] - a"""
         return integrate.quad(lambda t: special.j1(t)/t, 0, x)[0] - a
     zero_cross = find_zero_crossings(func_t2, 1e-10, 25, func_args=(1,))
-    nt.assert_array_almost_equal(np.array(zero_cross), np.array(exp_zc), decimal=5)
+    nt.assert_array_almost_equal(_np.array(zero_cross), _np.array(exp_zc), decimal=5)
     print("... find_zero_crossings OK for one-argument function")
     # test for function with no arguments but no zero crossings
     def func_t3(x):
@@ -337,13 +549,40 @@ def _test_find_zero_crossings():
     nt.assert_equal(len(zero_cross),0)
     print("... find_zero_crossings OK for empty return list")
     print("All test for _test_find_zero_crossings() passed successfully")
+    
+def _test_ImageComparator():
+    curFilePath = os.path.realpath(__file__)
+    testDataPath = curFilePath.rsplit('\\', 2)[0]
+    imgPath = os.path.join(testDataPath, 'testdata', 'mandrill.png')  
+
+    #H1 = _np.array([[ 9.43613054e-01,  -6.51706101e-02,   1.84603759e+02], # Need to use better homography
+    #                [  2.58720236e-03,  6.57586485e-01,   1.00856861e+02],
+    #                [ -3.72715493e-08,  -1.91863241e-05,  1.00000000e+00]])
+    #H2 = _np.array([[  9.43613054e-01,  -6.51706101e-02,   1.84603759e+02], # need to use better homography
+    #                [  2.58720236e-03,  6.57586485e-01,   1.00856861e+02],
+    #                [ -3.72715493e-08,  -1.91863241e-05,  1.00000000e+00]])
+    H1 =  _np.eye(3)
+    H2 = _np.eye(3)
+    H1[0,0] = 2
+    H1[1,1] = 2
+    ic = ImageComparator(numSubPlots=3, Hlist=[H1, H1], fsize=(16, 6))
+    im0 = imread(imgPath, flatten=True)
+    im1 = im0.copy()
+    im2 = im0.copy()
+    ic.imshow(im0, 0, title='Master')
+    ic.imshow(im1, 1, title='Slave1')
+    ic.imshow(im2, 2, title='Slave2')
+    ic.show()
 
 if __name__ == '__main__':
     import numpy.testing as nt
+    import os as os    
     from numpy import set_printoptions
     from scipy import integrate, special
+    from scipy.misc import imread
     set_printoptions(precision=4, linewidth=85)  # for visual output in manual tests.
     # Automatic tests
-    _test_find_zero_crossings()
+    #_test_find_zero_crossings()
     # Visual tests: These testing methods are meant to be manual tests which requires visual inspection.
-    _test_arrow()
+    #_test_arrow()
+    _test_ImageComparator()

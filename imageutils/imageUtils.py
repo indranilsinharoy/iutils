@@ -13,9 +13,7 @@ from __future__ import print_function, division
 import os as _os
 from PIL import Image as _Image
 import numpy as _np
-import matplotlib.pyplot as _plt
-import matplotlib.cm as _cm
-
+import iutils.plotutils.mplutils as _mpu
 
 def cv2mpl(im):
     """Convert color image (numpy array) created using OpenCV's ``imread``
@@ -151,43 +149,10 @@ def compute_average(imlist):
     # return average as uint8
     return _np.array(averageim,'uint8')
 
+
 def imshow(image, bGray=False, fig=None, axes=None, subplot=None, interpol=None,
            xlabel=None, ylabel=None):
     """Rudimentary image display routine, for quick display of images without
     the axes
     """
-    if (subplot == None):
-        subplot = int(111)
-    if(fig==None):
-        fig = _plt.figure()
-        axes = fig.add_subplot(subplot)
-    elif(axes==None):
-        axes = fig.add_subplot(subplot)
-    if(bGray==True):
-        _plt.gray()
-        # print '\ngray'
-    # plot the image
-    imPtHandle = _plt.imshow(image, _cm.gray, interpolation=interpol)
-    # get the image height and width to set the axes limits
-    try:
-        pix_height, pix_width = image.shape
-    except:
-        pix_height, pix_width, _ = image.shape
-    # Set the xlim and ylim to constrain the plot
-    axes.set_xlim(0, pix_width-1)
-    axes.set_ylim(pix_height-1, 0)
-    # Set the xlabel and ylable if provided
-    if(xlabel != None):
-        axes.set_xlabel(xlabel)
-    if(ylabel != None):
-        axes.set_ylabel(ylabel)
-    # Make the ticks to empty list
-    axes.xaxis.set_ticks([])
-    axes.yaxis.set_ticks([])
-    return imPtHandle, fig, axes
-
-
-
-
-
-
+    return _mpu.imshow(image, bGray, fig, axes, subplot, interpol, xlabel, ylabel)
