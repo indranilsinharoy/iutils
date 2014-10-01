@@ -14,7 +14,7 @@ from __future__ import division, print_function
 import numpy as _np
 from scipy import optimize as _optimize
 import matplotlib.pyplot as _plt
-import matplotlib.cm as _cm 
+import matplotlib.cm as _cm
 from matplotlib.widgets import  RectangleSelector as _RectangleSelector
 
 class arrow(object):
@@ -120,8 +120,8 @@ def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3,
         left and top spines. Use ['all'] to remove all spines.
     stype : string
         indicating type of spine as per the following options:
-        * 'center_data' = create 2-axis spines at data center
-        * 'center_axes' = center 2-axis spines at axes center
+        * 'center_data' = create 2-axes spines at data center
+        * 'center_axes' = center 2-axes spines at axes center
     soffset : list of floats
         list of spine offsets ``(left, right, top, bottom)``. The offset
         is with respect to ``stype``. If ``stype`` is not provided, then
@@ -229,6 +229,65 @@ def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3,
             for spine, offset in zip(allSpines, (left, right, top, bottom)):
                 ax.spines[spine].set_position((ref, pos + offset))
 
+
+def set_ticks(ax, numTicksX=5, numTicksY=5, xlim=None, ylim=None, which='major'):
+    """convenience function to quickly set the ticks of a matplotlib plot
+
+    Parameters
+    ----------
+    ax : axes object
+        the axes object
+    numTicksX : integer, optional
+        number of ticks along the x-axis
+    numTicksY : integer, optional
+        number of ticks along the y-axis
+    xlim : tuple, optional
+        x-axis limits
+    ylim : tuple, optional
+        y-axis limits
+    which : string, optional
+        which ticks -- 'major' or 'minor'
+
+    Returns
+    -------
+    None
+    """
+    xlim = ax.get_xlim() if xlim is None else xlim
+    ylim = ax.get_ylim() if ylim is None else ylim
+
+    def get_tick_locator_function(ax, axtype, which):
+        """returns the appropriate tick locator function
+
+        @ax : axis
+        @axtype : 'x' or 'y'
+        @which : 'major' or 'minor'
+        """
+        axType = 'yaxis' if axtype == 'y' else 'xaxis'
+        locFunc = 'set_minor_locator' if which == 'minor' else 'set_major_locator'
+        a = ax.__getattribute__(axType)
+        aTLocFunc = a.__getattribute__(locFunc)
+        return aTLocFunc
+
+    #
+    xticLocMult = abs(xlim[1] - xlim[0])/(numTicksX - 1)
+    yticLocMult = abs(ylim[1] - ylim[0])/(numTicksY - 1)
+    xticLabels = _plt.MultipleLocator(xticLocMult)
+    yticLabels = _plt.MultipleLocator(yticLocMult)
+
+    #
+    if which == 'major':
+        func = get_tick_locator_function(ax, 'x', 'major')
+        func(xticLabels)
+        func = get_tick_locator_function(ax, 'y', 'major')
+        func(yticLabels)
+
+    if which == 'minor':
+        func = get_tick_locator_function(ax, 'x', 'minor')
+        func(xticLabels)
+        func = get_tick_locator_function(ax, 'y', 'minor')
+        func(yticLabels)
+
+
 def format_stem_plot(mline, stlines, bline, mecol='#222222', mfcol='#F52080',
                      mstyle='o', msize=6, mjoin='None', stcol='#0080FF',
                      slw=1.3, bcol='#BBBBBB', blw=1.1, bstyle='--'):
@@ -288,7 +347,7 @@ def format_stem_plot(mline, stlines, bline, mecol='#222222', mfcol='#F52080',
     bline.set_linestyle(bstyle)
     bline.set_linewidth(blw)
     bline.set_color(bcol)
-    
+
 def imshow(image, bGray=False, fig=None, axes=None, subplot=None, interpol=None,
            xlabel=None, ylabel=None):
     """Rudimentary image display routine, for quick display of images without
@@ -306,7 +365,7 @@ def imshow(image, bGray=False, fig=None, axes=None, subplot=None, interpol=None,
         # print '\ngray'
     # plot the image
     imPtHandle = _plt.imshow(image, _cm.gray, interpolation=interpol)
-    # get the image height and width to set the axes limits
+    # get the image height and width to set the axis limits
     try:
         pix_height, pix_width = image.shape
     except:
@@ -366,7 +425,7 @@ class ImageComparator(object):
         self._rs = _RectangleSelector(self._masterAx, self._on_rec_draw, 'box')
         fig.canvas.mpl_connect('key_press_event', self._key_press)
 
-    def imshow(self, image, subPlotNumber, colmap=None, title=None):
+    def imshow(self, image, subPlotNumber, title=None, fontsize=14, **kwargs):
         """method of ``ImageComparator`` to render a particular subplot
 
         Parameters
@@ -380,6 +439,8 @@ class ImageComparator(object):
             matplotlib-type colormap
         title : string, optional
             title of the subplot
+        fontsize : integer, optional
+            fontsize of the title
 
         Returns
         -------
@@ -391,9 +452,9 @@ class ImageComparator(object):
         ``ImageComparator`` to display the figure.
         """
         ax = self._axlist[subPlotNumber]
-        imp = ax.imshow(image, interpolation='none')
-        if colmap:
-            imp.set_cmap(colmap)
+        ax.imshow(image, interpolation='none', **kwargs)
+        #if colmap:
+        #    imp.set_cmap(colmap)
         # TODO!! How to handle data limits???
         ylim, xlim = image.shape[:2]
         ylim = ylim - 1
@@ -401,7 +462,7 @@ class ImageComparator(object):
         ax.set_xlim(0, xlim)
         ax.set_ylim(ylim, 0)
         if title:
-            ax.set_title(title)
+            ax.set_title(title, fontsize=fontsize)
         if ax == self._masterAx:
             self._masterAxNativeY0 = 0
             self._masterAxNativeY1 = ylim
@@ -486,7 +547,7 @@ class ImageComparator(object):
         x0, x1, y0, y1 are the coordinates in the master axis/subplot
         """
         fp = _np.array([[x0, x1], [y0, y1], [1, 1]])
-        tp = _np.dot(H, fp)       
+        tp = _np.dot(H, fp)
         tp = tp/tp[-1] # normalize
         print("Debugging printing")
         print("\nfp:\n", fp)
@@ -529,31 +590,31 @@ def _test_find_zero_crossings():
     # Zero crossing test for function with no arguments
     def func_t1(x):
         """Computes Integrate [j1(t)/t, {t, 0, x}] - 1"""
-        return integrate.quad(lambda t: special.j1(t)/t, 0, x)[0] - 1
+        return _integrate.quad(lambda t: _special.j1(t)/t, 0, x)[0] - 1
     zero_cross = find_zero_crossings(func_t1, 1e-10, 25)
     exp_zc = [2.65748482456961, 5.672547403169345, 8.759901449672629, 11.87224239501442,
               14.99576753285061, 18.12516624215325, 21.258002755273516, 24.393014762783487]
-    nt.assert_array_almost_equal(_np.array(zero_cross), _np.array(exp_zc), decimal=5)
+    _nt.assert_array_almost_equal(_np.array(zero_cross), _np.array(exp_zc), decimal=5)
     print("... find_zero_crossings OK for zero-argument function")
     # test for function with one argument
     def func_t2(x, a):
         """Computes Integrate [j1(t)/t, {t, 0, x}] - a"""
-        return integrate.quad(lambda t: special.j1(t)/t, 0, x)[0] - a
+        return _integrate.quad(lambda t: _special.j1(t)/t, 0, x)[0] - a
     zero_cross = find_zero_crossings(func_t2, 1e-10, 25, func_args=(1,))
-    nt.assert_array_almost_equal(_np.array(zero_cross), _np.array(exp_zc), decimal=5)
+    _nt.assert_array_almost_equal(_np.array(zero_cross), _np.array(exp_zc), decimal=5)
     print("... find_zero_crossings OK for one-argument function")
     # test for function with no arguments but no zero crossings
     def func_t3(x):
         return x**2.0 + 1.0
     zero_cross = find_zero_crossings(func_t3, 0, 25)
-    nt.assert_equal(len(zero_cross),0)
+    _nt.assert_equal(len(zero_cross),0)
     print("... find_zero_crossings OK for empty return list")
     print("All test for _test_find_zero_crossings() passed successfully")
-    
+
 def _test_ImageComparator():
-    curFilePath = os.path.realpath(__file__)
+    curFilePath = _os.path.realpath(__file__)
     testDataPath = curFilePath.rsplit('\\', 2)[0]
-    imgPath = os.path.join(testDataPath, 'testdata', 'mandrill.png')  
+    imgPath = _os.path.join(testDataPath, 'testdata', 'mandrill.png')
 
     #H1 = _np.array([[ 9.43613054e-01,  -6.51706101e-02,   1.84603759e+02], # Need to use better homography
     #                [  2.58720236e-03,  6.57586485e-01,   1.00856861e+02],
@@ -566,7 +627,7 @@ def _test_ImageComparator():
     H1[0,0] = 2
     H1[1,1] = 2
     ic = ImageComparator(numSubPlots=3, Hlist=[H1, H1], fsize=(16, 6))
-    im0 = imread(imgPath, flatten=True)
+    im0 = _imread(imgPath, flatten=True)
     im1 = im0.copy()
     im2 = im0.copy()
     ic.imshow(im0, 0, title='Master')
@@ -575,11 +636,11 @@ def _test_ImageComparator():
     ic.show()
 
 if __name__ == '__main__':
-    import numpy.testing as nt
-    import os as os    
+    import numpy.testing as _nt
+    import os as _os
     from numpy import set_printoptions
-    from scipy import integrate, special
-    from scipy.misc import imread
+    from scipy import _integrate, _special
+    from scipy.misc import _imread
     set_printoptions(precision=4, linewidth=85)  # for visual output in manual tests.
     # Automatic tests
     #_test_find_zero_crossings()

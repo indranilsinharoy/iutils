@@ -18,7 +18,7 @@ import math as _math
 import numpy as _np
 from iutils.signalutils.signals import jinc as _jinc
 import iutils.opticsutils.imager as _imgr
-import warnings as _warnings
+#import warnings as _warnings
 import collections as _co
 
 def fresnel_number(r, z, wl=550e-6, approx=False):
@@ -82,8 +82,66 @@ def diffraction_spot_size(r, zi, wl=550e-6):
     -------
     spot_size : float
         The diffraction limited spot size given as 2.44*lambda*f/#
+
+    See Also
+    --------
+    diffraction_spot_size_from_fnumber()
     """
     return 1.22*wl*(zi/r)
+
+def diffraction_spot_size_from_fnumber(fnum, wl=550e-6):
+    """calculate the diffraction limited spot size, assuming circular
+    aperture from the F-# of the system
+
+    Parameters
+    ----------
+    fnum : float
+        F/# or the effective F/# of the system.
+    wl : float, optional
+        wavelength of light (default=550e-6 mm)
+
+    Returns
+    -------
+    spot_size : float
+        The diffraction limited spot size given as 2.44*lambda*f/#
+
+    See Also
+    --------
+    diffraction_spot_size()
+    """
+    return 2.44*wl*fnum
+
+def effective_fnumber(fnum, m=None, zxp=None, f=None):
+    """Calculate the effective F/#
+
+    Parameters
+    ----------
+    fnum : float
+        F/# (specified at infinite conjugates) of the lens
+    m : float, optional
+        magnification (defined as image_distance/object_distance)
+    zxp : float, optional
+        distance to the screen/image plane from the aperture/Exit pupil i.e.
+        the image distance
+    f : float, optional
+        focal length
+
+    Returns
+    --------
+    fnumEff : float
+        The effective F/#
+
+    Notes
+    -----
+    If ``m`` is given, then only the magnification parameter is used.
+    """
+    fnumEff = 0.0
+    if m is None:
+        fnumEff = (zxp/f)*fnum
+    else:
+        fnumEff = (1.0 - m)*fnum
+    return fnumEff
+
 
 def airy_pattern(wl, r, zxp, rho, norm=1):
     """Fraunhoffer intensity diffraction pattern for a circular aperture
@@ -423,7 +481,7 @@ def get_dir_cos_from_zenith_azimuth(zenith, azimuth, atype='deg', tol=1e-12):
 
     Notes
     -----
-    1. The zenith angle is also known as the inclination angle or polar 
+    1. The zenith angle is also known as the inclination angle or polar
        angle.
     2. The angle of elevation (i.e. the angle that the ray makes with
        the x-y axis) is given as 90 - zenith (:math:`\\theta`).
