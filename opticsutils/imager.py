@@ -202,25 +202,81 @@ def geometric_depth_of_field(focalLength, fNumber, objDist, coc, grossExpr=False
 # will extended it as we go ... may even break it up into components like
 # lens, sensor, etc.
 
-class scheimpflug(object):
-    def __init__(self, f, u=None, lensImgAng=0.0, atype='d'): # angle input/output is in degrees for now
+class Scheimpflug(object):
+    """Class for quick calculations of geometric scheimpflug imaging
+    """
+    infty = 10e22    # value of infinity
+    def __init__(self, f, u=None, v=None, alpha=None, beta=None, atype='d'):
+        """
+        Parameters
+        ----------
+        f : float
+            focal length, in length units (usually in mm)
+        u : float, optional
+            object to lens distance along the optical axis, in the same units
+            as of ``f``
+        v : float, optional
+            lens to image plane distance along the optical axis
+        alpha : float, optional
+            angle between lens standard and image standard. Units specified
+            by the parameter ``atype``. Specify either ``alpha`` or ``beta``
+        beta : float, optional
+            anglebetween the PoSF and lens standard. Units specified by the
+            parameter ``atype``. Specify either ``alpha`` or ``beta``
+        atype : string, optional
+            string code to specify angle. Use ``d`` for degrees and ``r``
+            for radians.
+
+        Notes
+        -----
+        1. If both ``alpha`` and ``beta`` are not specified during the object
+           creation, both of them are set to 0 (i.e. a rigid camera).
+        2. If both ``u`` and ``v`` are not specified during the object creation,
+           ``v`` is set equal to ``f``, the focal length.
+        3. If ``v``, the image plane distance is set or re-set, the corresponding
+           ``u`` is calculated, and then the value of ``beta`` is reevaluated
+           keeping ``alpha`` constant. This is consistant with how we may
+           adjust the standards in real life.
+        4. Internally, the class represents angles in radians
+        """
         if atype not in ['d', 'r']:
-            raise TypeError, 'Invalid angle'
+            raise TypeError, 'Invalid angle type specified'
+        if (alpha is not None) and (beta is not None):
+            raise TypeError, 'Specify either alpha or beta but not both'
+        self._atype = atype
+
+        # Set the focal length
         self._f = f
-        self._u = u
-        if u:
+
+        # set the object and image distances
+        if u is not None:
+            self._u = u
             self._v = gaussian_lens_formula(u=u, v=None, f=f)
+        elif v is not None:
+            self._v = v
+            self._u = gaussian_lens_formula(u=None, v=v, f=f)
         else:
-            self._v = None
-        if atype == 'd':
-            self._lensImgAng_d = lensImgAng  # perhaps this will be a vector later
-            self._lensImgAng_r = lensImgAng*_math.pi/180
+            self._v = f
+            self._u = gaussian_lens_formula(u=None, v=f, f=f,
+                                            infinity=Scheimpflug.infty)
+
+        # set the angles
+        if alpha is not None:
+            self._alpha = Scheimpflug._deg2rag(alpha) if atype == 'd' else alpha
+            self._beta = Scheimpflug._alpha2beta(self._alpha, self._u, self._f)
+        elif beta is not None:
+            self._beta = Scheimpflug._deg2rag(beta) if atype == 'd' else beta
+            self._alpha = Scheimpflug._beta2alpha(self._beta, self._u, self._f)
         else:
-            self._lensImgAng_r = lensImgAng
-            self._lensImgAng_d = lensImgAng*180/_math.pi
-        self._lensPosfAng_r = None
-        self._lensPosfAng_d = None
-        # modify this so that the lensPosfAng is calculated if lens lensImgAng is set
+            self._alpha = 0
+            self._beta = 0
+
+    def __str__(self):
+        alpha = self._alpha
+        beta = self._beta
+        alpha = Scheimpflug._rad2deg(alpha) if self._atype == 'd' else alpha
+        beta = Scheimpflug._rad2deg(beta) if self._atype == 'd' else beta
+        return "Scheimpflug(f={}, alpha={}, beta={})".format(self._f, alpha, beta)
 
     @property
     def f(self):
@@ -235,83 +291,119 @@ class scheimpflug(object):
         return self._u
 
     @u.setter
-    def u(self, value):
-        self._u = value
-        self._v = gaussian_lens_formula(u=value, v=None, f=self._f)
+    def u(self, val):
+        self._u = val
+        self._v = gaussian_lens_formula(u=val, v=None, f=self._f)
 
     @property
     def v(self):
         return self._v
 
     @v.setter
-    def v(self, value):
-        self._v = value
-        self._u = gaussian_lens_formula(u=None, v=value, f=self._f)
+    def v(self, val):
+        self._v = val
+        self._u = gaussian_lens_formula(u=None, v=val, f=self._f)
+        # recalculate beta
+        self._beta = Scheimpflug._alpha2beta(self._alpha, self._u, self._f )
+
 
     @property
-    def lensImgAng_d(self):
-        return self._lensImgAng_d
+    def alpha(self):
+        ang = self._alpha
+        ang = Scheimpflug._rad2deg(ang) if self._atype == 'd' else ang
+        return ang
 
-    @lensImgAng_d.setter
-    def lensImgAng_d(self, value):
-        self._lensImgAng_d = value
-        self._lensImgAng_r = value*_math.pi/180
-        # calculate lensPosfAng_d and lensPosfAng_r
-        tanLensImgAng = _math.tan(self._lensImgAng_r)
-        tanLensPosfAng = (self._u/self._f - 1)*tanLensImgAng
-        lensPosfAng = _math.atan(tanLensPosfAng)
-        self._lensPosfAng_r = lensPosfAng
-        self._lensPosfAng_d = lensPosfAng*180/_math.pi
+    @alpha.setter
+    def alpha(self, val):
+        self._alpha = Scheimpflug._deg2rag(val) if self._atype == 'd' else val
+        self._beta = Scheimpflug._alpha2beta(self._alpha, self._u, self._f )
 
     @property
-    def lensImgAng_r(self):
-        return self._lensImgAng_r
+    def beta(self):
+        ang = self._beta
+        ang = Scheimpflug._rad2deg(ang) if self._atype == 'd' else ang
+        return ang
 
-    @lensImgAng_r.setter
-    def lensImgAng_r(self, value):
-        self.lensImgAng_d = value*180/_math.pi
+    @beta.setter
+    def beta(self, val):
+        self._beta = Scheimpflug._deg2rag(val) if self._atype == 'd' else val
+        self._alpha = Scheimpflug._beta2alpha(self._beta, self._u, self._f)
 
-    @property
-    def lensPosfAng_d(self):
-        return self._lensPosfAng_d
+    @staticmethod
+    def _alpha2beta(alpha, u, f):
+        """
+        alpha : in radians
+        """
+        tanAlpha = _math.tan(alpha)
+        tanBeta = (u/f - 1)*tanAlpha
+        return _math.atan(tanBeta)
 
-    @lensPosfAng_d.setter
-    def lensPosfAng_d(self, value):
-        self._lensPosfAng_d = value
-        self._lensPosfAng_r = value*_math.pi/180
-        # calculate lensImgAng_d and lensImgAng_r
-        tanLensPosfAng = _math.tan(self._lensPosfAng_r)
-        tanLensImgAng = (self._f/(self._u - self._f))*tanLensPosfAng
-        lensImgAng = _math.atan(tanLensImgAng)
-        self._lensImgAng_r = lensImgAng
-        self._lensImgAng_d = lensImgAng*180/_math.pi
+    @staticmethod
+    def _beta2alpha(beta, u, f):
+        """
+        beta : in radians
+        """
+        tanBeta = _math.tan(beta)
+        tanAlpha = (f/(u - f))*tanBeta
+        return _math.atan(tanAlpha)
 
-    @property
-    def lensPosfAng_r(self):
-        return self._lensPosfAng_r
+    @staticmethod
+    def _rad2deg(x):
+        return x*180.0/_math.pi
 
-    @lensPosfAng_r.setter
-    def lensPosfAng_r(self, value):
-        self.lensPosfAng_d = value*180/_math.pi
+    @staticmethod
+    def _deg2rag(x):
+        return x*_math.pi/180.0
 
-# ---------------------------
+# ###########################################
 #   TEST FUNCTIONS
-# ---------------------------
+# ##########################################
 
 def _test_gaussian_lens_formula():
     """Test gaussian_lens_formula function"""
     v = gaussian_lens_formula(u=10e20, f=10)
-    nt.assert_equal(v, 10.0)
+    _nt.assert_equal(v, 10.0)
     v = gaussian_lens_formula(u=5000.0, f=100)
-    nt.assert_almost_equal(v, 102.04081632653062, decimal=5)
+    _nt.assert_almost_equal(v, 102.04081632653062, decimal=5)
     u = gaussian_lens_formula(v=200, f=200)
-    nt.assert_equal(u, 10e20)
+    _nt.assert_equal(u, 10e20)
     f = gaussian_lens_formula(u=10e20, v=40)
-    nt.assert_almost_equal(f, 40, decimal=5)
+    _nt.assert_almost_equal(f, 40, decimal=5)
     print("test_gaussian_lens_formula() is successful")
 
+def _test_scheimpflug():
+    """Test the schimpflug camera class and methods"""
+    # Try creating Scheimpflug with both alpha and beta specified
+    try:
+        Scheimpflug(f=180, u=3000, alpha=10, beta=20)
+    except Exception as e:
+        _nt.assert_equal(e.__class__, TypeError)
+    cam0 = Scheimpflug(f=180)
+    _nt.assert_equal(cam0.u, Scheimpflug.infty)
+    _nt.assert_equal(cam0.v, 180)
+    _nt.assert_equal(cam0.alpha, 0)
+    _nt.assert_equal(cam0.beta, 0)
+    # Create Scheimpflug camera object with only f, and u specified
+    cam1 = Scheimpflug(f=180, u=3000)
+    _nt.assert_equal(cam1.u, 3000)
+    _nt.assert_almost_equal(cam1.v, 191.4893617)
+    _nt.assert_equal(cam1.alpha, 0)
+    _nt.assert_equal(cam1.beta, 0)
+    # Create 2 Scheimpflug cameras with f and u and alpha specified in radians
+    # and degrees respectively
+    ang_d = 3.0
+    ang_r = _np.deg2rad(ang_d)
+    cam2 = Scheimpflug(f=180, u=3000, alpha=ang_r, atype='r')
+    cam3 = Scheimpflug(f=180, u=3000, alpha=3)
+    _nt.assert_almost_equal(_np.rad2deg(cam2.alpha), cam3.alpha)
+    _nt.assert_almost_equal(cam3.alpha, 3)
+    _nt.assert_almost_equal(cam3.beta, 39.387884973)
+    cam3.alpha = 5
+    _nt.assert_almost_equal(cam3.beta, 53.8863395127)
+
 if __name__ == '__main__':
-    import numpy.testing as nt
+    import numpy.testing as _nt
     from numpy import set_printoptions
     set_printoptions(precision=4, linewidth=85)  # for visual output in manual tests.
-    _test_gaussian_lens_formula()
+    #_test_gaussian_lens_formula()
+    _test_scheimpflug()

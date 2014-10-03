@@ -63,18 +63,23 @@ def fresnel_number(r, z, wl=550e-6, approx=False):
     else:
         return 2.0*(_math.sqrt(z**2 + r**2) - z)/wl
 
-def diffraction_spot_size(r, zi, wl=550e-6):
+def diffraction_spot_size(fnum=None, r=None, zi=None, wl=550e-6):
     """calculate the diffraction limited spot size, assuming circular
-    aperture
+    aperture. Specify either ``fnum`` or ``r`` and ``zi``
 
     Parameters
     ----------
-    r : float
-        radius of the aperture in units of length (usually mm)
-    zi : float
+    fnum : float, optional
+        F/# or the effective F/# of the system. If ``fnum`` is specified, then
+        the spot size shall be calculated using the ``fnum`` and the wavelength
+    r : float, optional
+        radius of the aperture in units of length (usually mm). If ``fnum`` is
+        also specified, then ``r`` is ignored.
+    zi : float, optional
         image distance (or the distance of the observation plane) in the
         same units of length as ``r``. For objects at infinity, ``zi`` is
-        the focal length of the lens.
+        the focal length of the lens. If ``fnum`` is also specified, then ``r``
+        is ignored.
     wl : float, optional
         wavelength of light (default=550e-6 mm)
 
@@ -82,34 +87,9 @@ def diffraction_spot_size(r, zi, wl=550e-6):
     -------
     spot_size : float
         The diffraction limited spot size given as 2.44*lambda*f/#
-
-    See Also
-    --------
-    diffraction_spot_size_from_fnumber()
     """
-    return 1.22*wl*(zi/r)
-
-def diffraction_spot_size_from_fnumber(fnum, wl=550e-6):
-    """calculate the diffraction limited spot size, assuming circular
-    aperture from the F-# of the system
-
-    Parameters
-    ----------
-    fnum : float
-        F/# or the effective F/# of the system.
-    wl : float, optional
-        wavelength of light (default=550e-6 mm)
-
-    Returns
-    -------
-    spot_size : float
-        The diffraction limited spot size given as 2.44*lambda*f/#
-
-    See Also
-    --------
-    diffraction_spot_size()
-    """
-    return 2.44*wl*fnum
+    spotSize = 2.44*wl*fnum if fnum else 1.22*wl*(zi/r)
+    return spotSize
 
 def effective_fnumber(fnum, m=None, zxp=None, f=None):
     """Calculate the effective F/#
