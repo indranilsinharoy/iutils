@@ -13,6 +13,7 @@
 from __future__ import division, print_function
 import numpy as _np
 import math as _math
+import collections as _co
 
 #----------------------------------
 # Digital sensor related functions
@@ -207,7 +208,8 @@ class Scheimpflug(object):
     """
     infty = 10e22    # value of infinity
     def __init__(self, f, u=None, v=None, alpha=None, beta=None, atype='d'):
-        """
+        """Scheimpflug camera class
+
         Parameters
         ----------
         f : float
@@ -271,20 +273,27 @@ class Scheimpflug(object):
             self._alpha = 0
             self._beta = 0
 
-    def __str__(self):
+    def __repr__(self):
         alpha = self._alpha
         beta = self._beta
         alpha = Scheimpflug._rad2deg(alpha) if self._atype == 'd' else alpha
         beta = Scheimpflug._rad2deg(beta) if self._atype == 'd' else beta
-        return "Scheimpflug(f={}, alpha={}, beta={})".format(self._f, alpha, beta)
+        return ("Scheimpflug(f={:2.2f}, alpha={:2.2f}, beta={:2.2f}, u={:2.2f},"
+                " v={:2.2f})".format(self._f, alpha, beta, self._u, self._v))
 
     @property
     def f(self):
+        """gets focus, ``f``
+        """
         return self._f
 
-#    @f.setter   # when this is set, what should change? u or v?
-#    def f(self, value):
-#        self._f = value
+    @f.setter
+    def f(self, val):
+        """sets focus, ``f``, and recomputes ``u`` and ``beta``
+        """
+        self._f = val
+        self._u = gaussian_lens_formula(u=None, v=self._v, f=val)
+        self._beta = Scheimpflug._alpha2beta(self._alpha, self._u, self._f)
 
     @property
     def u(self):
@@ -292,8 +301,11 @@ class Scheimpflug(object):
 
     @u.setter
     def u(self, val):
+        """sets object distance, ``u``, and recomputes ``v`` and ``alpha``
+        """
         self._u = val
         self._v = gaussian_lens_formula(u=val, v=None, f=self._f)
+        self._alpha = Scheimpflug._beta2alpha(self._beta, self._u, self._f)
 
     @property
     def v(self):
@@ -301,11 +313,12 @@ class Scheimpflug(object):
 
     @v.setter
     def v(self, val):
+        """sets image plane distance, ``v``, and recomputes ``u`` and ``beta``
+        """
         self._v = val
         self._u = gaussian_lens_formula(u=None, v=val, f=self._f)
         # recalculate beta
         self._beta = Scheimpflug._alpha2beta(self._alpha, self._u, self._f )
-
 
     @property
     def alpha(self):
@@ -354,6 +367,65 @@ class Scheimpflug(object):
     @staticmethod
     def _deg2rag(x):
         return x*_math.pi/180.0
+
+    @staticmethod
+    def cop_restore(alpha, h, k, atype='d'):
+        """calculate lateral and longitudinal shifts required to restore the
+        COP in cameras with base or asymmetrical tilts and swings.
+
+        PARAMETERS
+        ----------
+        alpha : float
+            angle of the lens tilt with proper sign convention. clockwise is +ve.
+            By default, it is assumed that the angle is specified in degrees.
+            If the angle ``alpha`` is specified in radians, use ``r`` for the
+            parameter ``atype``
+        h : float
+            the distance from the center of the lens standard (O) to the pivot.
+            If the pivot point lies above the lens center, ``h`` is positive.
+        k : float
+            the distance from the lens center to the COP. If the COP lies to
+            the right of the lens center, then ``k`` is positive.
+
+
+        Returns
+        -------
+        deltaZ : float
+            shift along the longitudinal direction required to restore COP
+            position
+        deltaY : float
+            shift along the y-axis (vertical direction) required to restore COP
+            position
+
+        Notes
+        -----
+        1. Currently the function returns COP restoration only for lens tilts
+           and not for swings.
+        2. The following figure shows a case when both ``h`` and ``k`` are
+           positive
+           ::
+
+                |
+                |
+                +  <- pivot
+                |
+                |  h
+                |
+              O |-------o <- COP
+                |   k
+                |
+                |
+                |
+                |
+
+        """
+        assert atype in ['d', 'r']
+        alpha = alpha if atype=='r' else _np.deg2rad(alpha)
+        deltaZ = h*_math.sin(alpha) + k*(1.0 - _math.cos(alpha))
+        deltaY = k*_math.sin(alpha) - h*(1.0 - _math.cos(alpha))
+        shift = _co.namedtuple('shift', ['deltaZ', 'deltaY'])
+        return shift(deltaZ, deltaY)
+
 
 # ###########################################
 #   TEST FUNCTIONS
