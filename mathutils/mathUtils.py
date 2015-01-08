@@ -4,26 +4,29 @@
 #
 # Author:      Indranil Sinharoy
 #
-# Created:     22/09/2012
-# Copyright:   (c) Indranil Sinharoy, 2012 - 2013
-# Licence:     MIT License
+# Created:        22/09/2012
+# Last Modified:  12/24/2014
+# Copyright:      (c) Indranil Sinharoy, 2012 - 2015
+# Licence:        MIT License
 #-------------------------------------------------------------------------------
+from __future__ import division, print_function
 import numpy as _np
+import sympy as _sym
 
 #Import rogue library (test matrix library similar to Matlab's gallery()) if
 #available
 try:
     import rogues.matrices as rm
 except ImportError:
-    print "Did not import rogues.matrices"
+    print("Did not import rogues.matrices")
 else:
-    print "Imported rogues.matrices as rm"
+    print("Imported rogues.matrices as rm")
 try:
     import rogues.utils as ru
 except ImportError:
-    print "Did not import rogues.utils"
+    print("Did not import rogues.utils")
 else:
-    print "Imported rogues.utils as ru"
+    print("Imported rogues.utils as ru")
 
 
 
@@ -39,10 +42,59 @@ def factorial(n):
     else:
         return n*factorial(n-1)
 
-def nCk(n,k):
+def fibonacci(n):
     """
-    nCk: nCk is n combination k or choose k items out of n items, is defined for
-    positive integers n>=k as nCk(n,k) = n!/(k!*(n-k)!)
+    returns a fibonacci sequence generator object for fibonacci sequence of n
+    elements
+
+    Examples
+    --------
+    >>> fs = fibonacci(2)
+    >>> list(fs)
+    [1, 1]
+    >>> fs = fibonaccig(10)
+    >>> list(fs)
+    [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
+    """
+    low, high = 0, 1
+    count = 0
+    while count < n:
+        yield high
+        low, high = high, low + high
+        count +=1
+
+def golden_ratio(n):
+    """
+    Evaluate the Golden Ratio to an accuracy of n decimal places
+
+    Examples
+    --------
+    >>> print(golden_ratio(20))
+    1.61803398874989484820
+    >>> print(golden_ratio(50))
+    1.61803398874989484820458683436563811772030917980576
+    """
+    x = _sym.symbols('x')
+    gr = [sol for sol in _sym.solve(x**2 - x - 1) if sol > 0][0]
+    return gr.evalf(n + 1)
+
+
+def nCk(n, k):
+    """
+    Evaluate `n` combination `k`, i.e. choose `k` items out of `n` items,
+    is defined for positive integers `n>=k` as `nCk(n,k) = n!/(k!*(n-k)!)`
+
+    Examples
+    --------
+    >>> nCk(3, 2)
+    3
+
+    See Also
+    --------
+    itertools.combinations(iterable, r): It returns successive r-length
+        combinations of elements in the iterable. For example,
+        `list(combinations(['A', 'B', 'C'], 2)) -->
+        [('A', 'B'), ('A', 'C'), ('B', 'C')]`
     """
     return factorial(n)/(factorial(k)*factorial(n-k))
 
@@ -53,7 +105,7 @@ def nPk(n,k):
     """
     return factorial(n)/factorial(n-k)
 
-def binomialDistribution(n,p):
+def binomial_distribution(n,p):
     """
     Binomial distribution is the probability distribution
     Formula nCk* p^k * (1-p)^(n-k)
@@ -84,22 +136,22 @@ def gallery(n=3):
 
 def cart2pol(X, Y, Z=None):
     """Transform Cartesian coordinates to polar or cylindrical
-    
+
     cart2pol(X, Y [,Z]) -> rho, theta [,Z]
-    
+
     Parameters
     ----------
     X  : Cartesian coordinate array
     Y  : Cartesian coordinate array
     Z  : (optional) if present, then the function converts 3D Cartesian coordinates
          to cylindrical coordinates.
-         
+
     Returns
     -------
     rho   : distance from the origin to a point in the x-y plane
     theta : counterclockwise angular displacement in radians from the positive x-axis
     Z     : height above the x-y plane
-    
+
     """
     if X.shape != Y.shape:
         raise ValueError("Input error: Expecting X.shape == Y.shape")
@@ -112,23 +164,23 @@ def cart2pol(X, Y, Z=None):
 
 ## Test the functions
 def _test_factorial():
-    print "test the factorial function"
+    print("test the factorial function")
     assert factorial(5)==120
 
 
 def _test_nCk():
-    print "test combination"
-    print nCk(10,2)
+    print("test combination")
+    print(nCk(10,2))
     #print nCk(2500,2)  #Right now this fails ... the recursion is too large...
 
 def _test_gallery():
-    print "test gallery(3)"
-    print gallery(3)
-    print "test gallery(5)"
-    print gallery(5)
+    print("test gallery(3)")
+    print(gallery(3))
+    print("test gallery(5)")
+    print(gallery(5))
 
 def _test_cart2pol():
-    print "test cart2pol()"    
+    print("test cart2pol()")
     X,Y = _np.mgrid[-2:2:10j,-2:2:10j]
     # Convert from cartesian to polar choosing the grid manually
     # Logic from http://scien.stanford.edu/pages/labsite/2003/psych221/projects/03/pmaeda/index_files/zernike.m
@@ -146,8 +198,24 @@ def _test_cart2pol():
     print(thetaExp)
     print(theta)
 
+def _test_fibonacci():
+    print("test fibonacci()")
+    fs = fibonacci(10)
+    fsl = list(fs)
+    fsexp = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
+    _nt.assert_array_equal(fsl, fsexp)
+
+def _test_goldenRatio():
+    print("test goldenRatio()")
+    gr15 = 1.618033988749895
+    _nt.assert_almost_equal(golden_ratio(15), gr15, decimal=15)
+    print(golden_ratio(50))
+
 if __name__ == '__main__':
+    import numpy.testing as _nt
 #    _test_factorial()
 #    _test_nCk()
 #    _test_gallery()
-    _test_cart2pol()
+#    _test_cart2pol()
+#    _test_fibonacci()
+    _test_goldenRatio()
