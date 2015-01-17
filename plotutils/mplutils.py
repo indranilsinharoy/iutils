@@ -15,6 +15,7 @@ import numpy as _np
 from scipy import optimize as _optimize
 import matplotlib.pyplot as _plt
 import matplotlib.cm as _cm
+import matplotlib.colors as _mplc
 from matplotlib.widgets import  RectangleSelector as _RectangleSelector
 
 class arrow(object):
@@ -561,6 +562,152 @@ class ImageComparator(object):
         """method to render the figure window"""
         _plt.show()
 
+# Helper functions for the function plot_complex_function()
+def _eval_func(f, re, im, n):
+    """evaluate the function in the complex grid
+    """
+    x = _np.linspace(re[0], re[1], n)
+    y = _np.linspace(im[0], im[1], n)
+    x, y = _np.meshgrid(x, y)
+    z = x + 1j*y
+    #try:
+    fz = f(z)
+    #except TypeError: # some functions such as np.floor() cannot handle complex
+    #    print("Evaluating real and imaginary parts separately.")
+    #    fz = f(x) + 1j*f(y)
+    # I shouldn't probably do this ... what if a compound function has floor within?
+    return fz
+
+def _hue(z):
+    """return scaled hue values as described in
+    http://dlmf.nist.gov/help/vrml/aboutcolor
+    """
+    q = 4.0*_np.mod((_np.angle(z)/(2*_np.pi) + 1), 1)
+    mask1 = (q >= 0) * (q < 1)
+    mask2 = (q >= 1) * (q < 2)
+    mask3 = (q >= 2) * (q < 3)
+    mask4 = (q >= 3) * (q < 4)
+    q[mask1] = (60.0/360)*q[mask1]
+    q[mask2] = (60.0/360)*(2.0*q[mask2] - 1)
+    q[mask3] = (60.0/360)*(q[mask3] + 1)
+    q[mask4] = (60.0/360)*2.0*(q[mask4] - 1)
+    return q
+
+def _absolute_map(absZ):
+    """return the gray-scaled mapping of the
+    absolute values
+    """
+    mask = absZ > 0
+    magMap = _np.empty(absZ.shape)
+    magMap[:] = _np.NaN
+    logConvFactor = _np.log(2.0)
+    magMap[mask] = (_np.log(absZ[mask])/logConvFactor
+                    - _np.floor(_np.log(absZ[mask])/logConvFactor))
+    return magMap**0.2 # to avoid too dark colors
+
+def _domain_map(z, satu, mapType=0):
+    """domain color the array `z`, with the mapping
+    type `mapType`, using saturation `s`. Currently
+    there is only one domain coloring type
+    """
+    h = _hue(z)
+    s = satu*_np.ones_like(h, _np.float)
+    v = _absolute_map(_np.absolute(z))
+    hsv_map = _np.dstack((h, s, v))
+    rgb_map = _mplc.hsv_to_rgb(hsv_map)
+    return rgb_map
+
+def plot_complex_function(f, re=(-2, 2), im=(-2, 2), n=500, title='',
+                          contours=True, numCtr=15, figsize=(5, 5), **kwargs):
+    """plots complex functions in 2D using domain mapping technique
+
+    Parameters
+    ----------
+    f : function object
+        the function
+    re : tuple
+        2-tuple to indicate the bounds of real axis
+    im : list
+        2-tuple to indicate the bounds of imaginary axis
+    n : integer
+        number of grid points is n**2
+    title : string
+        title for the plot
+    contours : bool
+        if True (default), contours lines are drawn
+    numCtr : integer
+        number of contour lines
+    figsize : tuple
+        2-tuple figure size as (width, height) in inches
+
+    Returns
+    -------
+    None
+
+    Examples
+    --------
+    >>> plot_complex_function(lambda z:np.sqrt(z), title='$f(z)=\sqrt{z}$')
+    >>> plot_complex_function(lambda z:1/np.tan(z), re=[-3, 3], im=[-2, 2],
+                              title='$f(z)=ctan(z)$', figsize=(8,5))
+    >>> plot_complex_function(lambda z:np.log(z), title='$f(z)=log(z)$')
+
+    Notes
+    -----
+    1. The phase/angle/argument is continuously mapped to hue such that the
+       mathematically significant phase values, specifically the multiples
+       of π/2 correponding to the real and imaginary axes, are mapped to
+       more immediately recognizable colors as follows:
+
+            | hue     |  phase (radians)  |
+            -------------------------------
+            | red     |     0 mod 2π (+1) |
+            | yellow  |   π/2 mod 2π (+i) |
+            | cyan    |     π mod 2π (-1) |
+            | blue    |  3π/2 mod 2π (-i) |
+            | orange  |   π/4 mod 2π      |
+            | green   |  3π/4 mod 2π      |
+            | magenta |  7π/4 mod 2π      |
+
+    2. |z| is mapped to show the direction of growth of the magnitude (from dark to
+       bright within each ring), and the absolute value doubles for each ring.
+       discontinuity in the intensity
+
+    3. The grids/contours helps to see whether the function is conformal or
+       not (a conformal function preserves the angles between two smooth
+       curves)
+
+    4. A discontinuity in hue represents a branch cut
+
+    References
+    ----------
+    1. Visualizing complex-valued functions with Matplotlib and Mayavi,
+       E. Petrisor, 2014
+    2. About color maps (NIST Digital Library of Mathematical Functions).
+       http://dlmf.nist.gov/help/vrml/aboutcolor
+    3. Trigonometry Is a Complex Subject. Revisiting inverse, complex, hyperbolic,
+       floating-point trig functions, Cleve Moler, 1998
+    4. Visualizing complex analytic functions using domain coloring, Hans Lundmark
+    """
+    w = _eval_func(f, re, im, n)
+    domc = _domain_map(w, satu=1.0)
+    fig, ax = _plt.subplots(1, 1, figsize=figsize)
+    ax.set_xlabel("Re(z)")
+    ax.set_ylabel("Im(z)")
+    tfs = 16 # title font size could be a **kwargs input later
+    ax.set_title(title, fontsize=tfs)
+    if contours:
+        levelsX = _np.linspace(2.0*re[0], 2.0*re[1], 2.0*numCtr + 1)
+        levelsY = _np.linspace(2.0*im[0], 2.0*im[1], 2.0*numCtr + 1)
+        ax.contour(_np.real(w), levels=levelsX, origin="lower",
+                   extent=[re[0], re[1], im[0], im[1]], colors='k',
+                   lw=1.5, linestyles='solid')
+        ax.contour(_np.imag(w), levels=levelsY, origin="lower",
+                   extent=[re[0], re[1], im[0], im[1]], colors='k',
+                   lw=1.5, linestyles='solid')
+    ax.imshow(domc, origin="lower", extent=[re[0], re[1], im[0], im[1]],
+              interpolation="hermite", zorder=20, alpha=0.9)
+    _plt.show()
+
 # ------------------------------------------------------------------------
 #           TESTING FUNCTIONS
 # -------------------------------------------------------------------------
@@ -635,15 +782,20 @@ def _test_ImageComparator():
     ic.imshow(im2, 2, title='Slave2')
     ic.show()
 
+def _test_plot_complex_function():
+    plot_complex_function(lambda z:_np.log(z), title='$f(z)=log(z)$')
+
+
 if __name__ == '__main__':
     import numpy.testing as _nt
     import os as _os
     from numpy import set_printoptions
-    from scipy import _integrate, _special
-    from scipy.misc import _imread
+    from scipy import integrate as _integrate, special as _special
+    from scipy.misc import imread as _imread
     set_printoptions(precision=4, linewidth=85)  # for visual output in manual tests.
     # Automatic tests
     #_test_find_zero_crossings()
     # Visual tests: These testing methods are meant to be manual tests which requires visual inspection.
     #_test_arrow()
-    _test_ImageComparator()
+    #_test_ImageComparator()
+    _test_plot_complex_function()

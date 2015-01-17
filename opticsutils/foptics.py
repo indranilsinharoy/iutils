@@ -457,7 +457,8 @@ def get_dir_cos_from_zenith_azimuth(zenith, azimuth, atype='deg', tol=1e-12):
     -------
     direction_cosines : tuple
         (alpha, beta, gamma) are the direction cosines, which are
-        cos(A), cos(B), cos(C).
+        cos(A), cos(B), cos(C). Where A, B, C are angles that the wave 
+        vector ``k`` makes with x, y, and z axis respectively.
 
     Notes
     -----
@@ -470,9 +471,7 @@ def get_dir_cos_from_zenith_azimuth(zenith, azimuth, atype='deg', tol=1e-12):
        - :math:`\\alpha = cos(A) = sin(\\theta)cos(\phi)`
        - :math:`\\beta  = cos(B) = sin(\\theta)sin(\phi)`
        - :math:`\\gamma = cos(C) = cos(\\theta)`
-    3. A, B, C are angles that the wave vector ``k`` makes with x, y, and
-       z axis respectively.
-    4. The use of :math:`\\theta` and :math:`\phi` to represent zenith and
+    3. The use of :math:`\\theta` and :math:`\phi` to represent zenith and
        azimuth angles follow the convension specified by ISO standard
        80000-2 :2009 [1]_
 

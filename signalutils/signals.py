@@ -48,13 +48,21 @@ def rect(x, a=1.0, sharp_transition=True):
 
     Notes
     -----
-    The rect function is defined as:
+    The `rect` function is defined as:
 
     ::
 
         rect(x/a) =  1 for abs(x) < a/2
                    0.5 for abs(x) = a/2
                      0 for abs(x) > a/2
+
+    Using the above definition, another form of the `rect` function is
+
+    ::
+
+        rect(ax) =   1 for abs(x) < 1/2a
+                   0.5 for abs(x) = 1/2a
+                     0 for abs(x) > 1/2a
 
     Examples
     --------
