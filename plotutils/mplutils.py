@@ -16,7 +16,10 @@ from scipy import optimize as _optimize
 import matplotlib.pyplot as _plt
 import matplotlib.cm as _cm
 import matplotlib.colors as _mplc
+import matplotlib.colorbar as _mplcbar
 from matplotlib.widgets import  RectangleSelector as _RectangleSelector
+from iutils.plotutils.colormaputils import get_colormap as _get_colormap
+cplotHSVcm = _get_colormap('cplothsv', N=256, sat=0.7, linearPhaseMap=False)
 
 class arrow(object):
     def __init__(self, start, end, a_col=(0.0,0.0,0.0), cone_scale=1.0,
@@ -581,6 +584,8 @@ def _eval_func(f, re, im, n):
 def _hue(z):
     """return scaled hue values as described in
     http://dlmf.nist.gov/help/vrml/aboutcolor
+
+    z : ndarray of complex numbers
     """
     q = 4.0*_np.mod((_np.angle(z)/(2*_np.pi) + 1), 1)
     mask1 = (q >= 0) * (q < 1)
@@ -617,8 +622,8 @@ def _domain_map(z, satu, mapType=0):
     rgb_map = _mplc.hsv_to_rgb(hsv_map)
     return rgb_map
 
-def plot_complex_function(f, re=(-2, 2), im=(-2, 2), n=500, title='',
-                          contours=True, numCtr=15, figsize=(5, 5), **kwargs):
+def plot_complex_function(f, re=(-2, 2), im=(-2, 2), n=600, title='',
+                          contours=True, numCtr=15, figsize=(5.5, 5.5), **kwargs):
     """plots complex functions in 2D using domain mapping technique
 
     Parameters
@@ -689,12 +694,13 @@ def plot_complex_function(f, re=(-2, 2), im=(-2, 2), n=500, title='',
     4. Visualizing complex analytic functions using domain coloring, Hans Lundmark
     """
     w = _eval_func(f, re, im, n)
-    domc = _domain_map(w, satu=1.0)
-    fig, ax = _plt.subplots(1, 1, figsize=figsize)
+    domc = _domain_map(w, satu=0.7)
+    fig = _plt.figure(figsize=figsize)
+    ax = fig.add_axes([0.15, 0.0, 0.85, 1.0])
     ax.set_xlabel("Re(z)")
     ax.set_ylabel("Im(z)")
     tfs = 16 # title font size could be a **kwargs input later
-    ax.set_title(title, fontsize=tfs)
+    ax.set_title(title, fontsize=tfs, y=1.02)
     if contours:
         levelsX = _np.linspace(2.0*re[0], 2.0*re[1], 2.0*numCtr + 1)
         levelsY = _np.linspace(2.0*im[0], 2.0*im[1], 2.0*numCtr + 1)
@@ -705,7 +711,16 @@ def plot_complex_function(f, re=(-2, 2), im=(-2, 2), n=500, title='',
                    extent=[re[0], re[1], im[0], im[1]], colors='k',
                    lw=1.5, linestyles='solid')
     ax.imshow(domc, origin="lower", extent=[re[0], re[1], im[0], im[1]],
-              interpolation="hermite", zorder=20, alpha=0.9)
+                   interpolation="hermite", zorder=20, alpha=0.9)
+    norm = _mplc.Normalize(vmin=0, vmax=2.0*_np.pi)
+    cbTickLocs = [0.0,  _np.pi/2, _np.pi, 3*_np.pi/2, 2*_np.pi]
+    cbTicLbls = ['$0$', '$\pi/2$', '$\pi$' , '$3\pi/2$', '$2\pi$']
+    cbax, kw = _mplcbar.make_axes(parents=ax, location='right', aspect=40,
+                                  shrink=0.66, pad=0.08)
+    cb = _mplcbar.ColorbarBase(ax=cbax, cmap=cplotHSVcm, norm=norm,)
+    cb.set_alpha(0.9)
+    cb.set_ticks(cbTickLocs)
+    cb.set_ticklabels(cbTicLbls)
     _plt.show()
 
 # ------------------------------------------------------------------------
@@ -783,7 +798,14 @@ def _test_ImageComparator():
     ic.show()
 
 def _test_plot_complex_function():
+    plot_complex_function(lambda z: z, title='$f(z)=z$')
+    plot_complex_function(lambda z:_np.sqrt(z), title='$f(z)=\sqrt{z}$')
     plot_complex_function(lambda z:_np.log(z), title='$f(z)=log(z)$')
+    plot_complex_function(lambda z:1/_np.tan(z), re=[-3, 3], im=[-2, 2],
+                      title='$f(z)=ctan(z)$', figsize=(8,5))
+    plot_complex_function(lambda z:((z**2 - 1)*(z - 2 - 1j)**2)/(z**2 + 2 + 2j),
+                      re=[-2.5, 2.5], im=[-2.5, 2.5], figsize=(7, 7),
+                      title='$f(z)=(x^2 - 1)(x - 2 - i)^2/(x^2 + 2 + 2i)$')
 
 
 if __name__ == '__main__':

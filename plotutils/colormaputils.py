@@ -16,10 +16,11 @@ from __future__ import division, print_function
 #import warnings
 import numpy as _np
 import matplotlib as _mpl
-import matplotlib.pylab as _plt
+import matplotlib.pyplot as _plt
+import matplotlib.colors as _mplc
 from mpl_toolkits.mplot3d import Axes3D
 
-def trace_colormap(cmap, figsize=(7,6), bcolor='w', show_vals=False):
+def trace_colormap(cmap, figsize=(7,6), bcolor='w', show_vals=False, infoInTitle=None):
     """function to plot the trace of RGB values in the given matplotlib
     compatible colormap
 
@@ -36,6 +37,8 @@ def trace_colormap(cmap, figsize=(7,6), bcolor='w', show_vals=False):
     show_vals : bool
         if True, corresponding values between 0 and 1 will be shown along
         the plot
+    infoInTitle : string
+        extra information to append to the standard title
 
     Returns
     -------
@@ -103,13 +106,17 @@ def trace_colormap(cmap, figsize=(7,6), bcolor='w', show_vals=False):
     ax.set_ylabel("Green", fontsize=13)
     ax.set_zlabel("Blue", fontsize=13)
 
-    ax.set_title('cmap: {}'.format(cmap.name), color='#555555', fontsize=13)
+    if infoInTitle:
+        title = 'cmap: {} ({})'.format(cmap.name, infoInTitle)
+    else:
+        title = 'cmap: {}'.format(cmap.name)
+    ax.set_title(title, color='#555555', fontsize=13)
     ax.azim = -40
     ax.dist = 11.2  #Required to do in order to prevent the labels from being cut off. (default is 10)
     _plt.show()
 
 
-def get_colormap(name='moreland', N=256):
+def get_colormap(name='moreland', N=256, **kwargs):
     """Function returns matplotlib compatible colormap of name `name`.
 
     Parameters
@@ -118,6 +125,13 @@ def get_colormap(name='moreland', N=256):
       name of the colormap, e.g. ``moreland``, ``iron``, ``fire``, etc.
     N : integer, optional
       specifies the number of colors in the colormap
+    kwargs : keyword arguments
+        examples are 'sat' for saturation value between 0 and 1 for cplothsv
+        colormap, etc.
+
+    Returns
+    -------
+    colormap : matplotlib colormap
 
     """
     if name =='moreland':
@@ -126,6 +140,10 @@ def get_colormap(name='moreland', N=256):
         return _get_iron(N)
     elif name == 'fire':
       return _get_fire(N)
+    elif name == 'cplothsv':
+        sat = kwargs['sat'] if 'sat' in kwargs else 1.0 # saturation
+        lmap = kwargs['linearPhaseMap'] if 'linearPhaseMap' in kwargs else True
+        return _get_complex_function_hsv(N, sat, lmap)
     else:
         raise ValueError('Invalid colormap specified')
 
@@ -134,6 +152,7 @@ def get_colormap_description():
     1. moreland : "Diverging Maps for Scientific Visualization," Kenneth Moreland
     2. iron : cool warm colormap used for thermographic imaging
     3. fire : diverging color map from ImageJ
+    4. cplothsv : colormap for complex function plot using hsv domain mapping
     """
     return cmap_str_des
 
@@ -143,6 +162,7 @@ def _get_moreland(N):
     Parameters
     ----------
     N : integer
+        Number of colors in the colormap
 
     Returns
     -------
@@ -425,7 +445,7 @@ def _get_iron(N):
     return cwm
 
 def _get_fire(N):
-    """Helper function for generating Fire colormap. 
+    """Helper function for generating Fire colormap.
 
     Parameters
     ----------
@@ -438,7 +458,7 @@ def _get_fire(N):
 
     References
     ----------
-    # Fire colormap, ImageJ 
+    # Fire colormap, ImageJ
     """
     col_seq = [ (  0/255.,   0/255.,   0/255.),
                 (  0/255.,   0/255.,   7/255.),
@@ -708,6 +728,69 @@ def _get_fire(N):
     firecm = _mpl.colors.LinearSegmentedColormap('Fire', cdict, N)
     return firecm
 
+def _hue_scaling(args):
+    """return scaled hue values as described in
+    http://dlmf.nist.gov/help/vrml/aboutcolor
+
+    args : ndarray of args / angle of complex numbers between in the open
+           interval [0, 2*pi)
+    q : scaled values returned in the interval [0, 1)
+    """
+    q = 4.0*_np.mod((args/(2*_np.pi) + 1), 1)
+    mask1 = (q >= 0) * (q < 1)
+    mask2 = (q >= 1) * (q < 2)
+    mask3 = (q >= 2) * (q < 3)
+    mask4 = (q >= 3) * (q < 4)
+    q[mask1] = (60.0/360)*q[mask1]
+    q[mask2] = (60.0/360)*(2.0*q[mask2] - 1)
+    q[mask3] = (60.0/360)*(q[mask3] + 1)
+    q[mask4] = (60.0/360)*2.0*(q[mask4] - 1)
+    return q
+
+def _get_complex_function_hsv(N, sat=0.9, linearPhaseMap=True):
+    """Helper function for generating HSV based colormap (cplothsv) for
+    rendering complex functions using domain mapping technique in matplotlib,
+    especially by `mplutils.plot_complex_function()`.
+
+    Parameters
+    ----------
+    N : integer
+        length of the colormap
+    sat : float
+        saturation
+
+    Returns
+    -------
+    colormap : colormap
+      matplotlib colormap
+
+    References
+    ----------
+    # `mplutils._hue()`
+    """
+    hLinear = _np.linspace(0, 2*_np.pi, num=N, endpoint=False)
+    if linearPhaseMap:
+        hScaled = hLinear/(2*_np.pi)
+    else:
+        hScaled = _hue_scaling(hLinear)
+    s = sat*_np.ones_like(hScaled)
+    v = _np.ones_like(hScaled)
+    hsv = _np.dstack((hScaled, s, v))
+    rgb = _mplc.hsv_to_rgb(hsv)
+    # creation of the tuple structures for red, green, blue
+    indexInColMap = _np.linspace(0, 1.0, num=N).reshape(N, 1)
+    r = rgb[:,:,0].reshape(N, 1)
+    g = rgb[:,:,1].reshape(N, 1)
+    b = rgb[:,:,2].reshape(N, 1)
+    rTupleStructure = _np.hstack((indexInColMap, r, r))
+    gTupleStructure = _np.hstack((indexInColMap, g, g))
+    bTupleStructure = _np.hstack((indexInColMap, b, b))
+    cdict = {'red': tuple(tuple(elem) for elem in rTupleStructure),
+             'green': tuple(tuple(elem) for elem in gTupleStructure),
+             'blue': tuple(tuple(elem) for elem in bTupleStructure)}
+    cplotHSVcm = _mpl.colors.LinearSegmentedColormap('cplothsv', cdict, N)
+    return cplotHSVcm
+
 # ***********************
 # Test functions
 # ***********************
@@ -722,10 +805,19 @@ def _test_trace_colormap():
     # Trace cm.hsv colormap (it contains 256 levels)
     trace_colormap(_mpl.cm.hsv)
     # Trace customized colormaps
-    moreland_cmap = get_colormap('moreland', N=256)
-    trace_colormap(moreland_cmap)
-    iron_cmap = get_colormap('iron', N=512)
-    trace_colormap(iron_cmap, show_vals=True)
+    morelandCmap = get_colormap('moreland', N=256)
+    trace_colormap(morelandCmap)
+    ironCmap = get_colormap('iron', N=512)
+    trace_colormap(ironCmap, show_vals=True)
+    cplotHSVcm = get_colormap('cplothsv', N=256, sat=1.0)
+    trace_colormap(cplotHSVcm, infoInTitle='sat=1.0, linear mapping of hsv')
+    cplotHSVcm = get_colormap('cplothsv', N=256, sat=1.0, linearPhaseMap=False)
+    trace_colormap(cplotHSVcm, infoInTitle='sat=1.0, scaled mapping of hsv')
+    cplotHSVcm = get_colormap('cplothsv', N=256, sat=0.7)
+    trace_colormap(cplotHSVcm, infoInTitle='sat=0.7, linear mapping of hsv')
+    cplotHSVcm = get_colormap('cplothsv', N=256, sat=0.7, linearPhaseMap=False)
+    trace_colormap(cplotHSVcm, infoInTitle='sat=0.7, scaled mapping of hsv')
+
 
 
 if __name__ == '__main__':
