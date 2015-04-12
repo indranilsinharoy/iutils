@@ -6,7 +6,7 @@
 #
 # Created:   25/09/2014
 # Copyright: (c) Indranil Sinharoy, 2015
-# Licence:   MIT License
+# License:   MIT License
 #-------------------------------------------------------------------------------
 from __future__ import print_function, division
 import numpy as _np
@@ -78,15 +78,15 @@ def get_homography2D(fp, tp, method='DLT', normbyh9=True):
     Parameters
     ----------
     fp : ndarray
-        ``fp`` can be a 2xN or 3xN ndarray of "from"-points. If ``fp`` is 3xN 
-        the scaling factors ``w_i`` may or may not be 1. i.e the structure of 
-        ``fp = _np.array([[x0, x1, ...], [y0, y1, ...], [w0, w1, ...]])``. 
+        ``fp`` can be a ``2xN`` or ``3xN`` ndarray of "from"-points. If ``fp`` is 
+        ``3xN`` the scaling factors ``w_i`` may or may not be 1. i.e the structure 
+        of ``fp = _np.array([[x0, x1, ...], [y0, y1, ...], [w0, w1, ...]])``. 
         If ``fp`` is 2xN, then it is assumed that ``w_i = 1`` in homogeneous
         coordinates. i.e. ``fp = _np.array([[x0, x1, ...], [y0, y1, ...]])``
     tp : ndarray
-        a 2xN or 3xN ndarray of corresponding "to"-points. If ``tp`` is 3xN 
-        the scaling factors ``w_i'`` may or may not be 1. i.e the structure of 
-        ``tp = _np.array([[x0', x1', ...], [y0', y1', ...], [w0', w1', ...]])``. 
+        a ``2xN`` or ``3xN`` ndarray of corresponding "to"-points. If ``tp`` is 
+        ``3xN`` the scaling factors ``w_i'`` may or may not be 1. i.e the structure 
+        of ``tp = _np.array([[x0', x1', ...], [y0', y1', ...], [w0', w1', ...]])``. 
         If ``tp`` is 2xN, then it is assumed that ``w_i' = 1`` in homogeneous 
         coordinates is 1. i.e. ``tp = _np.array([[x0', x1', ...], [y0', y1', ...]])``
     method : string, optional
@@ -106,17 +106,18 @@ def get_homography2D(fp, tp, method='DLT', normbyh9=True):
     References
     ----------
     1. Multi-view Geometry in Computer Vision, Richard Hartley and Andrew
-       Zisserman     
+       Zisserman
+       
+    See Also
+    --------
+    get_affine2D()
     """
     if fp.shape != tp.shape:
         raise RuntimeError("The point arrays must have the same shape!")
-        
     if (fp.shape[0] < 2) or (fp.shape[0] > 3):
         raise RuntimeError("The length of the input arrays in the first "
-                          "dimension must be 3 or 2")
-    
+                           "dimension must be 3 or 2")
     numCorrespondences = fp.shape[1]
-    
     if fp.shape[0] == 2:
         fp = _np.r_[fp, _np.ones((1, numCorrespondences))]
         tp = _np.r_[tp, _np.ones((1, numCorrespondences))]
@@ -138,14 +139,80 @@ def get_homography2D(fp, tp, method='DLT', normbyh9=True):
     Htilde = Vh[8,:].reshape((3,3))
     
     # Denormalization H = T'^-1 H_tilde T
-    H = _np.dot(_linalg.inv(Tdash), _np.dot(Htilde, T))
-    
+    H = _np.dot(_linalg.inv(Tdash), _np.dot(Htilde, T))    
+
     if normbyh9:
         H = H/H[2,2]
-
     return H
 
+def get_affine2D(fp, tp, normbyha9=True):
+    """Return the affine homography ``HA`` as described in Algorithm (4.7) of 
+    Hartley and Zisserman.  
+    
+    Parameters
+    ----------
+    fp : ndarray
+        ``fp`` can be a ``2xN`` or ``3xN`` ndarray of "from"-points. If ``fp`` is 
+        ``3xN`` the scaling factors ``w_i`` may or may not be 1. i.e the structure 
+        of ``fp = _np.array([[x0, x1, ...], [y0, y1, ...], [w0, w1, ...]])``. 
+        If ``fp`` is 2xN, then it is assumed that ``w_i = 1`` in homogeneous
+        coordinates. i.e. ``fp = _np.array([[x0, x1, ...], [y0, y1, ...]])``
+    tp : ndarray
+        a ``2xN`` or ``3xN`` ndarray of corresponding "to"-points. If ``tp`` is 
+        ``3xN`` the scaling factors ``w_i'`` may or may not be 1. i.e the structure 
+        of ``tp = _np.array([[x0', x1', ...], [y0', y1', ...], [w0', w1', ...]])``. 
+        If ``tp`` is 2xN, then it is assumed that ``w_i' = 1`` in homogeneous 
+        coordinates is 1. i.e. ``tp = _np.array([[x0', x1', ...], [y0', y1', ...]])``
+    normbyha9 : bool, optional
+        if ``True`` (default), the affine homography ``HA`` is normalized by 
+        dividing all elements by ``HA[-1,-1]``, so that ``HA[-1,-1] = 1``. However, 
+        this normalization will fail if ``HA[-1,-1]`` is very small or zero (if
+        the coordinate origin is mapped to a point at infinity by ``HA``)
+    
+    Returns
+    -------
+    HA : ndarray
+        the 3x3 affine homography, ``HA`` such that ``tp = np.dot(HA, fp)``
+       
+    References
+    ----------
+    1. Multi-view Geometry in Computer Vision, Richard Hartley and Andrew
+       Zisserman
+       
+    See Also
+    --------
+    get_homography2D()
+    """
+    if fp.shape != tp.shape:
+        raise RuntimeError("The point arrays must have the same shape!")
+    if (fp.shape[0] < 2) or (fp.shape[0] > 3):
+        raise RuntimeError("The length of the input arrays in the first "
+                           "dimension must be 3 or 2")
+    numCorrespondences = fp.shape[1]
+    if fp.shape[0] == 2:
+        fp = _np.r_[fp, _np.ones((1, numCorrespondences))]
+        tp = _np.r_[tp, _np.ones((1, numCorrespondences))]
 
+    fp, T = normalize_2D_pts(fp)
+    tp, Tdash = normalize_2D_pts(tp)
+    
+    # the translation is zero as conditioned points have zero mean   
+    A = _np.vstack((fp[:2], tp[:2]))
+    U, S, Vh = _linalg.svd(A.T)
+    B = Vh[:2, :2].T
+    C = Vh[:2, 2:4].T
+    zt = [[0.0], 
+          [0.0]]
+    H2x2 = _np.dot(C, _np.linalg.pinv(B))
+    H = _np.vstack(( _np.hstack((   H2x2  ,   zt  )), 
+                                 [0.0, 0.0,  1.0] ))
+    # Denormalization H = T'^-1 H_tilde T   
+    HA = _np.dot(_linalg.inv(Tdash), _np.dot(H, T))
+    
+    if normbyha9:
+        HA = HA/HA[2,2]
+    
+    return HA
 
 # ##########################################
 # test functions to test the module methods
@@ -159,7 +226,7 @@ def _test_get_homography2D():
     randHomo[2,2] = 1.0
     # create a set of "from" points
     numPts = 6
-    fp = _np.random.randint(low=-50, high=50, size=(2,numPts))
+    fp = _np.random.randint(low=-50, high=50, size=(2, numPts))
     fp = _np.r_[fp, _np.ones((1, numPts))]
     tp = _np.dot(randHomo, fp) 
     # send fp and tp as 3xN arrays     
@@ -168,16 +235,45 @@ def _test_get_homography2D():
     
     #  Compare with OpenCV's function
     if _OPENCV:
-        homoEst, _ = _cv2.findHomography((fp[:2].T).astype(_np.float), 
-                                         (tp[:2].T).astype(_np.float), method=0)
-        _nt.assert_array_almost_equal(randHomo, homoEst) 
-    
+        cvHomoEst, _ = _cv2.findHomography((fp[:2].T).astype(_np.float32), 
+                                         (tp[:2].T).astype(_np.float32), method=0)
+        # becoz we are using float32 (and not float64), we may not always get
+        # a precision of above 5 decimal places when comparing the two matrices
+        # therefore we use "decimal=4"                                        
+        _nt.assert_array_almost_equal(homoEst, cvHomoEst, decimal=4)
+
     # When passing 2xN arrays, ensure that the points are homogenized
     homoEst = get_homography2D(fp[:2]/fp[-1], tp[:2]/tp[-1], method='DLT')
     _nt.assert_array_almost_equal(randHomo, homoEst)
     print("get_homography2D() test successful")
     
-
+def _test_get_affine2D():
+    # Test affine transform estimation function get_affine2D()
+    # create a random affine transform matrix
+    randHA2by2 = _np.random.rand(2, 2)
+    randTxy = 100.0*_np.random.random(2).reshape(2,1)
+    randAffine = _np.vstack((_np.hstack((randHA2by2, randTxy)),
+                             _np.array([0.0, 0.0, 1.0])))
+    # create a set of "from" points
+    numPts = 6
+    fp = _np.random.randint(low=-50, high=50, size=(2, numPts))
+    fp = _np.r_[fp, _np.ones((1, numPts))]
+    tp = _np.dot(randAffine, fp)
+    affineEst = get_affine2D(fp, tp)
+    _nt.assert_array_almost_equal(randAffine, affineEst) 
+    
+    # using OpenCV's getAffineTransform() function that accepts points as 2x3
+    # ndarrays. i.e. it uses 3 correspondences between the "to" and "from" 
+    # images. Therefore we shall use only the first 3 points from both "to" and
+    # "from" set of points. Also, the dtype of the arrays is expected to be 
+    # float32. The function returns a 2x3 matrix that represents the affine 
+    # transformation
+    if _OPENCV:
+        cvAffineEst = _cv2.getAffineTransform((fp[:2, :3].T).astype(_np.float32), 
+                                            (tp[:2, :3].T).astype(_np.float32))
+        _nt.assert_array_almost_equal(affineEst[:2], cvAffineEst, decimal=4)
+    print("get_affine2D() test successful")
+                                     
 
 if __name__ == '__main__':
     import numpy.testing as _nt 
@@ -186,5 +282,6 @@ if __name__ == '__main__':
     set_printoptions(precision=5, suppress=False)
     # test functions
     _test_get_homography2D()
-
+    _test_get_affine2D()
+    
 

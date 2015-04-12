@@ -8,7 +8,7 @@
 # Created:       01/24/2013
 # Last Modified: 08/14/2014
 # Copyright:     (c) Indranil Sinharoy 2013
-# Licence:       MIT License
+# License:       MIT License
 #-------------------------------------------------------------------------------
 from __future__ import division, print_function
 import numpy as _np

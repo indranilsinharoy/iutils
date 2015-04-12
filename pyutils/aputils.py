@@ -8,7 +8,7 @@
 # Created:       09/12/2014
 # Last Modified:
 # Copyright:     (c) Indranil Sinharoy 2014
-# Licence:       MIT License
+# License:       MIT License
 #-------------------------------------------------------------------------------
 """Utility functions for array (mostly Numpy arrays) processing. All examples
 in docstrings assume that the module has been imported as ``apu``

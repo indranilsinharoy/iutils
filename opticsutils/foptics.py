@@ -8,7 +8,7 @@
 # Created:       09/22/2012
 # Last Modified: 07/09/2014
 # Copyright:     (c) Indranil Sinharoy 2012, 2013, 2014
-# Licence:       MIT License
+# License:       MIT License
 #-------------------------------------------------------------------------------
 """foptics module contains some useful functions for Fourier Optics based
 calculations.
