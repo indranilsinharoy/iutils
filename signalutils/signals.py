@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #-------------------------------------------------------------------------------
 # Name:          signals.py
 # Purpose:       collection of signals/functions. Most of these are either

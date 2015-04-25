@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #-------------------------------------------------------------------------------
 # Name:        cgUtils.py
 # Purpose:     Utility functions useful for computer graphics

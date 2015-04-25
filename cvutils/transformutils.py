@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #-------------------------------------------------------------------------------
 # Name:      transformutils.py
 # Purpose:   Transformations for computer vision related applications
@@ -10,6 +11,7 @@
 #-------------------------------------------------------------------------------
 from __future__ import print_function, division
 import numpy as _np
+import math as _math
 import warnings as _warnings
 import scipy.linalg as _linalg
 try:
@@ -18,6 +20,50 @@ except ImportError:
     _OPENCV = False
 else:
     _OPENCV = True
+
+def order_points(pts):
+    """returns list of ordered coordinates from a list of 2-tuple four coordinates
+    
+    Parameters
+    ----------
+    pts : list or ndarray
+        4-element list of 2-tuples specifying the four (x,y) coordinates
+        of a rectangle.
+    
+    Returns
+    -------
+    opts : ndarray
+        ``opts`` is of shape (4, 2) containing the (x,y) coordinates. See Notes
+        
+    Notes
+    -----
+    1. if `pt-0` is `top-left`, `pt-1` is `top-right`, `pt-2` is `bottom-right`
+       and `pt-3` is `bottom-left` of the rectangle as shown below::
+    
+        pt-0:(x₀, y₀) o————————————o pt-1:(x₁, y₁)
+                      |            |        
+                      |            |
+        pt-3:(x₃, y₃) o————————————o pt-2:(x₂, y₂)
+    2. Assumption - the points should roughly form a rectangle 
+    
+    Reference
+    ---------
+    1. Adapted from "OpenCV getPerspectiveTransform Example" at pyimagesearch.com
+    """
+    if not isinstance(pts, _np.ndarray):
+        pts = _np.array(pts)
+
+    opts = _np.empty((4, 2))
+    
+    s = pts.sum(axis=1)
+    opts[0] = pts[_np.argmin(s)] # (x₀ + y₀) < (xᵢ + yᵢ) V i ∈ 1,2,3
+    opts[2] = pts[_np.argmax(s)] # (x₂ + y₂) > (xᵢ + yᵢ) V i ∈ 0,1,3
+    
+    d = _np.diff(pts, axis=1)
+    opts[1] = pts[_np.argmin(d)] # (y₁ - x₁) < (yᵢ- xᵢ) V i ∈ 0,2,3 as y₁ << x₁ 
+    opts[3] = pts[_np.argmax(d)] # (y₃ - x₃) > (yᵢ- xᵢ) V i ∈ 0,1,2 as y₃ >> x₃
+    
+    return opts
 
 
 def normalize_2D_pts(p):
@@ -213,6 +259,79 @@ def get_affine2D(fp, tp, normbyha9=True):
         HA = HA/HA[2,2]
     
     return HA
+    
+def _distance(pt0, pt1):
+    """return the Euclidean distance between two points ``pt0`` and ``pt1`` 
+    expressed as (x, y)
+    
+    Parameters
+    ----------
+    pt0, pt1 : list/tuple/ndarray
+        (x, y) coordinates
+    
+    Returns
+    -------
+    dist : float
+        Euclidean distance between the points
+    """
+    sqrt = _math.sqrt
+    x0, y0 = pt0
+    x1, y1 = pt1
+    return sqrt((x1 - x0)**2 + (y1 - y0)**2)
+    
+    
+def four_point_transform(image, pts):
+    """apply perspective transformation to `image` to unwarp perspective distortion
+    identified by 4 ROI points in the image
+    
+    Parameters
+    ----------
+    image : ndarray
+        image to be perspectively transformed
+    pts : ndarray
+        a (4,2) shaped ndarray containing the four points that contain
+        the ROI of the image
+    
+    Returns
+    -------
+    warped : ndarray
+        the transformed image
+    
+    Notes
+    -----
+    1. This function depends on the opencv library
+    
+    Example
+    -------
+    >>> image = cv2.imread('imagefile.png')
+    >>> pts = np.array([(63, 242), (291, 110), (361, 252), (78, 386)])
+    >>> warped = four_point_transform(image, pts)
+    
+    Reference
+    ---------
+    1. Adapted from "OpenCV getPerspectiveTransform Example" at pyimagesearch.com
+    """
+    assert _OPENCV, "The function requires opencv package"
+    assert isinstance(image, _np.ndarray), "image is required to be a Numpy array"
+    assert image.shape[0] > 0 and image.shape[1] > 0
+    # compute width and height of new image
+    tl, tr, br, bl = order_points(pts).astype('float32') 
+    tWid = int(_distance(tl, tr))
+    bWid = int(_distance(bl, br))
+    lHit = int(_distance(tl, bl))
+    rHit = int(_distance(tr, br))
+    width = max(tWid, bWid)
+    height = max(lHit, rHit)
+    # construct the dst set of points
+    dst = _np.array([[0, 0], [width-1, 0], [width-1, height-1], [0, height-1]], 
+                   dtype='float32')
+    # compute the perspective transform matrix and apply it. Definition of `src` and 
+    # `dst` in the function getPerspectiveTransform()
+    # src – Coordinates of quadrangle vertices in the source image.
+    # dst – Coordinates of the corresponding quadrangle vertices in the destination image.
+    mat = _cv2.getPerspectiveTransform(src=pts, dst=dst)
+    warped = _cv2.warpPerspective(src=image, M=mat, dsize=(width, height))
+    return warped
 
 # ##########################################
 # test functions to test the module methods
@@ -273,15 +392,40 @@ def _test_get_affine2D():
                                             (tp[:2, :3].T).astype(_np.float32))
         _nt.assert_array_almost_equal(affineEst[:2], cvAffineEst, decimal=4)
     print("get_affine2D() test successful")
-                                     
+          
+def _test_order_points():
+    # Test order_points() function
+    pts = [(0.0, 0.0), (5.0, 0.3), (4.7, 5.0), (0.1, 4.8)]
+    opts = order_points(pts) 
+    # the pts are already ordered, so there must not be any change
+    _nt.assert_array_equal(_np.array(pts), opts)    
+    pts = _np.array(pts)
+    opts = order_points(pts[[3, 1, 0, 2], :]) # rearranged the points
+    _nt.assert_array_equal(pts, opts)
+    print("order_points() test successful")
+
+def _test_four_point_transform():
+    curdir = _path.dirname(_path.abspath(__file__))
+    imgdir = _path.join(curdir[:curdir.find("cvutils")], 'testdata')
+    imgfile = "perspective_warp.png"
+    image = _cv2.imread(_path.join(imgdir, imgfile))
+    
+    pts = _np.array([(101, 185), (393, 151), (479, 323), (187, 441)]).astype('float32')   
+    warped = four_point_transform(image, pts)
+    _cv2.imshow("Original", image)
+    _cv2.imshow("Warped", warped)
+    _cv2.waitKey(0)                        
 
 if __name__ == '__main__':
     import numpy.testing as _nt 
     from numpy import set_printoptions
-    
+    import os.path as _path
     set_printoptions(precision=5, suppress=False)
-    # test functions
-    _test_get_homography2D()
-    _test_get_affine2D()
+    # non-visual test functions
+    #_test_get_homography2D()
+    #_test_get_affine2D()
+    #_test_order_points()
+    # visual test functions
+    _test_four_point_transform()
     
 

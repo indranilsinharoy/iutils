@@ -1,12 +1,13 @@
+# -*- coding: utf-8 -*-
 #-------------------------------------------------------------------------------
 # Name:        textUtils.py
 # Purpose:
 #
-# Author:      Indranil
+# Author:      Indranil Sinharoy
 #
 # Created:     06/10/2012
 # Copyright:   (c) Indranil 2012
-# Licence:     <your licence>
+# Licence:     MIT Licence
 #-------------------------------------------------------------------------------
 import os, glob
 

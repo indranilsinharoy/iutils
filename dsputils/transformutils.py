@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #--------------------------------------------------------------------------
 # Name:          transformutils.py
 # Purpose:       collection of utilities for transformations based

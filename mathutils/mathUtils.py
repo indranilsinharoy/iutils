@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #-------------------------------------------------------------------------------
 # Name:      mathUtils.py
 # Purpose:   Math Utility programs
