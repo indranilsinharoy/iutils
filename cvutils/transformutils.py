@@ -65,7 +65,6 @@ def order_points(pts):
     
     return opts
 
-
 def normalize_2D_pts(p):
     """Function to normalize 2D homogeneous points
     
@@ -266,7 +265,7 @@ def _distance(pt0, pt1):
     
     Parameters
     ----------
-    pt0, pt1 : list/tuple/ndarray
+    pt0, pt1 : list or tuple or ndarray
         (x, y) coordinates
     
     Returns
@@ -282,15 +281,16 @@ def _distance(pt0, pt1):
     
 def four_point_transform(image, pts):
     """apply perspective transformation to `image` to unwarp perspective distortion
-    identified by 4 ROI points in the image
+    (top-down view) identified by 4 ROI points in the image
     
     Parameters
     ----------
     image : ndarray
-        image to be perspectively transformed
+        image to be perspectively transformed (`dtype` is `float32`)
     pts : ndarray
         a (4,2) shaped ndarray containing the four points that contain
-        the ROI of the image
+        the ROI of the image. (If `dtype` is not `float32`, the `dtype`
+        of the points will be fored to `float32`) 
     
     Returns
     -------
@@ -315,7 +315,8 @@ def four_point_transform(image, pts):
     assert isinstance(image, _np.ndarray), "image is required to be a Numpy array"
     assert image.shape[0] > 0 and image.shape[1] > 0
     # compute width and height of new image
-    tl, tr, br, bl = order_points(pts).astype('float32') 
+    pts = order_points(pts).astype('float32')
+    tl, tr, br, bl = pts 
     tWid = int(_distance(tl, tr))
     bWid = int(_distance(bl, br))
     lHit = int(_distance(tl, bl))
@@ -330,8 +331,8 @@ def four_point_transform(image, pts):
     # src – Coordinates of quadrangle vertices in the source image.
     # dst – Coordinates of the corresponding quadrangle vertices in the destination image.
     mat = _cv2.getPerspectiveTransform(src=pts, dst=dst)
-    warped = _cv2.warpPerspective(src=image, M=mat, dsize=(width, height))
-    return warped
+    warped = _cv2.warpPerspective(src=image.astype('float32'), M=mat, dsize=(width, height))
+    return warped.astype(image.dtype)
 
 # ##########################################
 # test functions to test the module methods
@@ -400,8 +401,19 @@ def _test_order_points():
     # the pts are already ordered, so there must not be any change
     _nt.assert_array_equal(_np.array(pts), opts)    
     pts = _np.array(pts)
-    opts = order_points(pts[[3, 1, 0, 2], :]) # rearranged the points
+    # rearranged the points (rows of pts array)
+    opts = order_points(pts[[3, 1, 0, 2], :]) 
     _nt.assert_array_equal(pts, opts)
+    # A different set of points (pts is already ordered)
+    pts = _np.array([[82, 151], [241, 142], [281, 388], [103, 414]])
+    opts = order_points(pts) 
+    _nt.assert_array_equal(pts, opts)
+    # rearranged the points (rows of pts array)
+    opts = order_points(pts[[3, 1, 0, 2], :]) 
+    _nt.assert_array_equal(pts, opts)
+    opts = order_points(pts[[1, 0, 3, 2], :]*6.528)
+    _nt.assert_array_equal(pts*6.528, opts)
+    
     print("order_points() test successful")
 
 def _test_four_point_transform():
@@ -414,7 +426,8 @@ def _test_four_point_transform():
     warped = four_point_transform(image, pts)
     _cv2.imshow("Original", image)
     _cv2.imshow("Warped", warped)
-    _cv2.waitKey(0)                        
+    _cv2.waitKey(1000)
+    _cv2.destroyAllWindows()                        
 
 if __name__ == '__main__':
     import numpy.testing as _nt 
@@ -428,4 +441,3 @@ if __name__ == '__main__':
     # visual test functions
     _test_four_point_transform()
     
-
