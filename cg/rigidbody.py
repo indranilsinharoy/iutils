@@ -24,8 +24,7 @@ def dual_matrix(vec):
     Parameters
     ----------
     vec : ndarray 
-        3-element numpy array or 3x1 numpy matrix object vector in :math:`\mathbb{R}^3` 
-        space
+        3-element numpy array in :math:`\mathbb{R}^3` space
 
     Returns
     -------
@@ -67,8 +66,28 @@ def dual_matrix(vec):
     >>> np.dot(uhat.T, u)
     matrix([[ 0.,  0.,  0.]])
     """
-    x, y, z = [elem.item() for elem in vec]
-    return _np.matrix(((0.0, -z, y),(z, 0.0, -x), (-y, x, 0.0)))
+    x, y, z = vec.reshape(-1)
+    return _np.matrix(((0.0, -z, y), (z, 0.0, -x), (-y, x, 0.0)))
+
+def skew(vec):
+    """return the skew-symmetric matrix from 3x1 vector ``vec``. 
+    
+    Parameters
+    ----------
+    vec : ndarray 
+        3-element numpy array in :math:`\mathbb{R}^3` space
+
+    Returns
+    -------
+    vec_hat : ndarray
+        the skew-symmetric matrix, a square matrix, associated with the vector ``vec``.
+        
+    Notes
+    -----
+    This functions is same as ``dual_matrix()``, except that it returns ndarray.
+    """
+    return _np.asarray(dual_matrix(vec))
+    
 
 def rotMat2D(angle, atype='r'):
     """Return a 2D rotation matrix, based on the input angle.
@@ -241,10 +260,27 @@ def se2(x, y, theta=0, deg=True):
 #%%  TEST FUNCTIONS
 
 def _test_dual_matrix():
-    pass
+    """basic test for dual_matrix() function
+    """
+    v = _np.array([1, 2, 3])
+    dm = _np.matrix(([[ 0., -3.,  2.],
+                      [ 3.,  0., -1.],
+                      [-2.,  1.,  0.]]))
+    _nt.assert_array_almost_equal(dm, dual_matrix(v), decimal=6)
+    print("test dual_matrix() successful")
 
+def _test_skew():
+    """basic test for skew() function
+    """
+    v = _np.array([1, 2, 3])
+    dm = dual_matrix(v)
+    sk = skew(v)
+    _nt.assert_almost_equal(dm, sk, decimal=6)
+    print("test skew() successful")
+    
 def _test_rotMat2D():
-    # Test the function rotMat2D
+    """test the function rotMat2D()
+    """
     # simple test
     angle = 45 # 45 degrees
     r = rotMat2D(angle,'d')
@@ -272,7 +308,8 @@ def _test_rotMat2D():
     print("test rotMat2D() successful")
 
 def _test_rotMat3D():
-    # Test the function rotMat3D
+    """test the function rotMat3D
+    """
     randomAngle = lambda: _np.random.random_integers(0, 90)
     angle = randomAngle()
     r = rotMat3D((1, 0, 0), angle, 'd')
@@ -307,7 +344,8 @@ if __name__ == '__main__':
     import numpy.linalg as _lalg
     from numpy import set_printoptions
     set_printoptions(precision=4, linewidth=85)  # for visual output in manual tests.
-    _test_dual_matrix()    
+    _test_dual_matrix() 
+    _test_skew()
     _test_rotMat2D()
     _test_rotMat3D()
     _test_rot2()
