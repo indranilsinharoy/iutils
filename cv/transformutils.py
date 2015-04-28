@@ -334,6 +334,7 @@ def four_point_transform(image, pts):
     warped = _cv2.warpPerspective(src=image.astype('float32'), M=mat, dsize=(width, height))
     return warped.astype(image.dtype)
 
+
 # ##########################################
 # test functions to test the module methods
 # ##########################################

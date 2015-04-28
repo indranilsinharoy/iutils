@@ -1,39 +1,41 @@
 # -*- coding: utf-8 -*-
-#-------------------------------------------------------------------------------
-# Name:        cgUtils.py
-# Purpose:     Utility functions useful for computer graphics
+#-----------------------------------------------------------------------------------------
+# Name:        rigidbody.py
+# Purpose:     Utility functions useful for computer graphics, especially related to 
+#              rigid body transformations
 #
 # Author:      Indranil Sinharoy
 #
 # Created:     07/11/2012
-# Modified:    07/22/2014
-# Copyright:   (c) Indranil Sinharoy, 2012 - 2014
+# Modified:    04/28/2015
+# Copyright:   (c) Indranil Sinharoy, 2012 - 2015
 # Licence:     MIT License
-#-------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
+"""utility functions related to rigid body transformations for both computer vision and
+computer graphics
+"""
 from __future__ import print_function, division
 import numpy as _np
 
 def dual_matrix(vec):
-    """Returns the dual matrix, also known as the hat operator in skew
-    theory. The dual matrix is the skew-symmetric matrix associated
-    with the 3x1 vector
+    """Returns the dual matrix, also known as the hat operator in skew theory. The dual 
+    matrix is the skew-symmetric matrix associated with the 3x1 vector
 
     Parameters
     ----------
-    vec : 3-element numpy array or 3x1 numpy matrix object
-        vector in :math:`\mathbb{R}^3` space
+    vec : ndarray 
+        3-element numpy array or 3x1 numpy matrix object vector in :math:`\mathbb{R}^3` 
+        space
 
     Returns
     -------
     vec_hat : numpy matrix
-        the skew-symmetric matrix, a square matrix, associated with the
-        vector ``vec``.
+        the skew-symmetric matrix, a square matrix, associated with the vector ``vec``.
 
     Notes
     -----
-    The dual matrix, or the hat operator returns a 3x3 skew-symmetric
-    matrix as shown below. Given a vector
-    :math:`v = [v_1, v_2, v_3]^T \in \mathbb{R}^3` the hat operator
+    The dual matrix, or the hat operator returns a 3x3 skew-symmetric matrix as shown 
+    below. Given a vector :math:`v = [v_1, v_2, v_3]^T \in \mathbb{R}^3` the hat operator
     returns:
 
     .. math::
@@ -90,8 +92,7 @@ def rotMat2D(angle, atype='r'):
 
     Notes
     -----
-    The rotation matrix, :math:`R \in SO(2)`, returned is
-    the following form:
+    The rotation matrix, :math:`R \in SO(2)`, returned is the following form:
 
     .. math::
 
@@ -101,16 +102,14 @@ def rotMat2D(angle, atype='r'):
             sin(\\theta) & cos(\\theta)
             \end{array}\\right]
 
-    The rotation matrix :math:`R` rotates points/vectors in the
-    xy-Cartesian plane counter-clockwise through an angle
-    :math:`\\theta` about the origin of the cartesian coordinate
-    system.
+    The rotation matrix :math:`R` rotates points/vectors in the xy-Cartesian plane 
+    counter-clockwise by an angle :math:`\\theta` about the origin of the cartesian 
+    coordinate system.
 
-    To perform the rotation using the rotation matrix
-    :math:`R`, the position of each point must be represented by
-    a column vector :math:`v`, containing the coordinates of the
-    point. A rotated vector is obtained by using the matrix
-    multiplication :math:`Rv`.
+    To perform the rotation using the rotation matrix :math:`R`, the position of each 
+    point must be represented by a column vector :math:`v`, containing the coordinates 
+    of the point. A rotated vector is obtained by using the matrix multiplication 
+    :math:`Rv`.
     """
     if atype=='d':
         angle = _np.radians(angle)
@@ -120,8 +119,8 @@ def rotMat2D(angle, atype='r'):
     return r
 
 def rotMat3D(axis, angle, atype='r', tol=1e-12):
-    """Return the rotation matrix for 3D rotation by angle ``angle``
-    and about an arbitrary axis ``axis``.
+    """Return the rotation matrix for 3D rotation by angle ``angle`` and about an 
+    arbitrary axis ``axis``.
 
     Parameters
     ----------
@@ -142,15 +141,15 @@ def rotMat3D(axis, angle, atype='r', tol=1e-12):
 
     Notes
     -----
-    The 3D rotation matrix is computed using the Rodrigues' rotation
-    formula which has the following form [1]_, [2]_:
+    The 3D rotation matrix is computed using the Rodrigues' rotation formula which has 
+    the following form [1]_, [2]_:
 
     .. math::
 
         R(\\theta) = I cos(\\theta) + sin(\\theta) \\hat{k} + (1 - cos(\\theta))kk^T
 
-    where, :math:`\\theta` is the angle of rotation, and :math:`k` is the
-    axis about which the rotation is to be performed.
+    where, :math:`\\theta` is the angle of rotation, and :math:`k` is the axis about 
+    which the rotation is to be performed.
 
     References
     ----------
@@ -160,10 +159,89 @@ def rotMat3D(axis, angle, atype='r', tol=1e-12):
     """
     t = _np.radians(angle) if atype=='d' else angle
     cos, sin, I = _np.cos, _np.sin, _np.identity
-    k = _np.array(axis).reshape(3,1)
-    r = cos(t)*I(3) + sin(t)*dual_matrix(k) + (1-cos(t))*k*k.T
-    r[_np.abs(r)<tol]=0.0
+    k = _np.array(axis).reshape(3, 1)
+    r = cos(t)*I(3) + sin(t)*dual_matrix(k) + (1 - cos(t))*k*k.T
+    r[_np.abs(r) < tol] = 0.0
     return r
+
+
+def rot2(theta, deg=True):
+    """returns 2D rotation matrix :math:`R \in SO(2)`.
+
+    Parameters
+    ----------
+    theta : float
+        the angle of rotation
+    deg : bool
+        ``True`` = degree (default), ``False`` = radians
+
+    Returns
+    -------
+    r : ndarray
+        the rotation matrix
+
+    Notes
+    -----
+    Same as the function ``rotMat2D()`` execpt for slight change in the input parameter
+    specification, plus ``rot2()`` returns ``ndarray`` instead of numpy matrix. 
+    See the function's docstring for details.
+    
+    See Also
+    --------
+    rotMat2D()
+    """
+    atype = 'd' if deg else 'r'
+    return _np.asarray(rotMat2D(angle=theta, atype=atype))
+    
+def rot3():
+    pass
+
+
+def se2(x, y, theta=0, deg=True):
+    """returns planar translation and rotation transformation matrix SE(2) as a 
+    homogeneous (3x3) transformation matrix 
+    
+    Parameters
+    ----------
+    x : float
+        translation along x-axis
+    y : float
+        translation along y-axis
+    theta : float
+        angle of rotation in the plane
+    deg : bool
+        ``True`` = degree (default), ``False`` = radians 
+        
+    Returns
+    -------
+    T : ndarray
+        homogeneous 3x3 transformation matrix of the form:
+
+    .. math::
+
+            T(x, y, \\theta) =
+            \\left[\\begin{array}{ccc}
+            cos(\\theta) & - sin(\\theta)  & x \\\\
+            sin(\\theta) &   cos(\\theta)  & y \\\\
+                0        &     0           & 1
+            \end{array}\\right]
+    
+    References
+    ----------
+    .. [1] Robotics, Vision and Control: Fundamental Algorithms in MATLAB, Peter Corke
+    """
+    r00, r01, r10, r11 = rot2(theta, deg).reshape(-1)
+    T = _np.array([[r00, r01,   x],
+                   [r10, r11,   y],
+                   [0.0, 0.0, 1.0]])
+    return T
+    
+
+
+#%%  TEST FUNCTIONS
+
+def _test_dual_matrix():
+    pass
 
 def _test_rotMat2D():
     # Test the function rotMat2D
@@ -209,6 +287,19 @@ def _test_rotMat3D():
     _nt.assert_array_almost_equal(r.T, _lalg.inv(r))    # inverse = transpose
     print("test rotMat3D() successful")
 
+def _test_rot2():
+    pass
+
+def _test_rot3():
+    pass
+
+def _test_se2():
+    T1 = se2(1, 2, 30)
+    T1exp = _np.array([[ 0.866025,      -0.5,  1.0],
+                       [      0.5,  0.866025,  2.0],
+                       [      0.0,       0.0,  1.0]])
+    _nt.assert_array_almost_equal(T1, T1exp, decimal=6)
+    print("test se2() successful")
 
 
 if __name__ == '__main__':
@@ -216,5 +307,9 @@ if __name__ == '__main__':
     import numpy.linalg as _lalg
     from numpy import set_printoptions
     set_printoptions(precision=4, linewidth=85)  # for visual output in manual tests.
+    _test_dual_matrix()    
     _test_rotMat2D()
     _test_rotMat3D()
+    _test_rot2()
+    _test_rot3()
+    _test_se2()   
