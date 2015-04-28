@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #-------------------------------------------------------------------------------
-# Name:      mathUtils.py
-# Purpose:   Math Utility programs
+# Name:      general.py
+# Purpose:   general ath Utility programs
 #
 # Author:      Indranil Sinharoy
 #
@@ -10,29 +10,32 @@
 # Copyright:      (c) Indranil Sinharoy, 2012 - 2015
 # Licence:        MIT License
 #-------------------------------------------------------------------------------
+"""General math utilities
+"""
 from __future__ import division, print_function
 import numpy as _np
 import sympy as _sym
 
-#Import rogue library (test matrix library similar to Matlab's gallery()) if
-#available
-try:
-    import rogues.matrices as rm
-except ImportError:
-    print("Did not import rogues.matrices")
-else:
-    print("Imported rogues.matrices as rm")
-try:
-    import rogues.utils as ru
-except ImportError:
-    print("Did not import rogues.utils")
-else:
-    print("Imported rogues.utils as ru")
+# trig functions
+sind = lambda x : _np.sin(_np.deg2rad(x))
+cosd = lambda x : _np.cos(_np.deg2rad(x))
+tand = lambda x : _np.tan(_np.deg2rad(x))
+
+# inverse trig functions
+arcsind = lambda x : _np.rad2deg(_np.arcsin(x))
+arccosd = lambda x : _np.rad2deg(_np.arccos(x))
+arctand = lambda x : _np.rad2deg(_np.arctan(x))
+
+# docstrings of the trig functions
+sind.__doc__ = "Sine of argument in degrees"
+cosd.__doc__ = "Cosine of argument in degrees"
+tand.__doc__ = "Tangent of argument in degrees"
+arcsind.__doc__ = "Inverse sine in degrees"
+arccosd.__doc__ = "Inverse cosine in degrees"
+arctand.__doc__ = "Inverse tan in degrees"
 
 
 
-
-## General math utilities
 def factorial(n):
     """
     factorial is defined as n! = n*(n-1)!
@@ -114,27 +117,6 @@ def binomial_distribution(n,p):
     """
     return [nCk(n,k)*(p**k)*((1-p)**(n-k)) for k in range(n+1)]
 
-## Linear Algebra utilities
-
-def gallery(n=3):
-    """
-    Similar to MATLAB's test matrix gallery(3) and gallery(5). gallery(3) returns
-    a badly conditioned 3-by-3 matrix. gallery(5) is an interesting eigenvalue
-    problem. The Matlab documentation says, "Try to find its EXACT eigenvalues
-    and eigenvectors. 5-by-5 matrix. For other test matrices, import the rogues
-    package.
-    """
-    if (n==5):
-        return _np.matrix([[  -9,     11,    -21,     63,    -252],
-                         [  70,    -69,    141,   -421,    1684],
-                         [-575,    575,  -1149,   3451,  -13801],
-                         [3891,  -3891,   7782, -23345,   93365],
-                         [1024,  -1024,   2048,  -6144,   24572]])
-    else:
-        return _np.matrix([[-149,-50,-154],
-                         [537,180,546],
-                         [-27,-9,-25]])
-
 def cart2pol(X, Y, Z=None):
     """Transform Cartesian coordinates to polar or cylindrical
 
@@ -174,12 +156,6 @@ def _test_nCk():
     print(nCk(10,2))
     #print nCk(2500,2)  #Right now this fails ... the recursion is too large...
 
-def _test_gallery():
-    print("test gallery(3)")
-    print(gallery(3))
-    print("test gallery(5)")
-    print(gallery(5))
-
 def _test_cart2pol():
     print("test cart2pol()")
     X,Y = _np.mgrid[-2:2:10j,-2:2:10j]
@@ -214,9 +190,8 @@ def _test_goldenRatio():
 
 if __name__ == '__main__':
     import numpy.testing as _nt
-#    _test_factorial()
-#    _test_nCk()
-#    _test_gallery()
-#    _test_cart2pol()
-#    _test_fibonacci()
+    _test_factorial()
+    _test_nCk()
+    _test_cart2pol()
+    _test_fibonacci()
     _test_goldenRatio()

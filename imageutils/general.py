@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
 #-------------------------------------------------------------------------------
-# Name:          imageUtils.py
-# Purpose:       Image processing (especially handling I/O and display) utilities
+# Name:          general.py
+# Purpose:       General image processing utilities
+#                 1. handling I/O and display 
 #
 # Author:        Indranil Sinharoy
 #
