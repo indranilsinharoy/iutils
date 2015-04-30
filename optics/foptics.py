@@ -1,25 +1,57 @@
 # -*- coding: utf-8 -*-
-#-------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
 # Name:          foptics.py
 # Purpose:       Fourier Optics Utility Functions
 #
 # Author:        Indranil Sinharoy
 #
 # Created:       09/22/2012
-# Last Modified: 07/09/2014
-# Copyright:     (c) Indranil Sinharoy 2012, 2013, 2014
+# Last Modified: 04/30/2015
+# Copyright:     (c) Indranil Sinharoy 2012, 2013, 2014, 2015
 # License:       MIT License
-#-------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
 """foptics module contains some useful functions for Fourier Optics based
 calculations.
 """
 from __future__ import division, print_function
 import math as _math
 import numpy as _np
-from iutils.signalutils.signals import jinc as _jinc
-import iutils.opticsutils.imager as _imgr
+from iutils.signal.signals import jinc as _jinc
+import iutils.optics.imager as _imgr
 #import warnings as _warnings
 import collections as _co
+
+#%% Module helper functions
+
+def _set_small_values_to_zero(tol, *values):
+    """helper function to set infinitesimally small values to zero
+    """
+    return [0 if abs(value) < tol else value for value in values]
+
+def _is_dir_cos_valid(alpha, beta, gamma):
+    """test the validity of direction cosines
+    returns ``True`` if valid, ``False`` if not
+    """
+    if abs(alpha**2 + beta**2 + gamma**2 - 1) > 1e-12:
+        print('The sum of squares of the direction cosines is not equal to 1')
+        return False
+    else:
+        return True
+        
+def _first(iterable, what, test='equality'):
+    """return the index of the first occurance of ``what`` in ``iterable``
+    """
+    if test=='equality':
+        for index, item in enumerate(iterable):
+            if item == what:
+                break
+        else:
+                index = None
+    else:
+        raise NotImplementedError
+    return index
+
+#%% Fourier optics related functions
 
 def fresnel_number(r, z, wl=550e-6, approx=False):
     """calculate the fresnel number
@@ -301,9 +333,7 @@ def geometric_depth_of_field(focalLength, fNumber, objDist, coc, grossExpr=False
 
 
 
-#----------------------------------
-# Aberration calculation functions
-#----------------------------------
+#%% Aberration calculation functions
 
 def defocus(w020, radius, zi):
     """Return the amount focus shift or defocus, deltaZ
@@ -431,12 +461,10 @@ def seidel_5(u0, v0, X, Y, wd=0, w040=0, w131=0, w222=0, w220=0, w311=0):
     return w
 
 
-#-------------------------------------
-# Some ray optics helper functions
-#-------------------------------------
+#%% Some ray optics helper functions
 
-def get_dir_cos_from_zenith_azimuth(zenith, azimuth, atype='deg', tol=1e-12):
-    """Returns the direction cosines alpha, beta & gamma
+def dir_cos_from_zenith_azimuth(zenith, azimuth, atype='deg', tol=1e-12):
+    """returns the direction cosines alpha, beta & gamma
     of the direction vector described by zenith and azimuth angles
 
     Parameters
@@ -477,7 +505,7 @@ def get_dir_cos_from_zenith_azimuth(zenith, azimuth, atype='deg', tol=1e-12):
 
     Examples
     --------
-    >>> get_dir_cos_from_zenith_azimuth(20.0, 10.0)
+    >>> dir_cos_from_zenith_azimuth(20.0, 10.0)
     (0.33682408883346515, 0.059391174613884698, 0.93969262078590843)
 
     References
@@ -486,7 +514,7 @@ def get_dir_cos_from_zenith_azimuth(zenith, azimuth, atype='deg', tol=1e-12):
 
     See Also
     --------
-    get_zenith_azimuth_from_dir_cos(),
+    zenith_azimuth_from_dir_cos(),
     get_alpha_beta_gamma_set()
     """
     if atype=='deg':
@@ -495,16 +523,15 @@ def get_dir_cos_from_zenith_azimuth(zenith, azimuth, atype='deg', tol=1e-12):
     cosA = _np.sin(zenith)*_np.cos(azimuth)
     cosB  = _np.sin(zenith)*_np.sin(azimuth)
     cosC = _np.cos(zenith)
+    assert _is_dir_cos_valid(cosA, cosB, cosC)
     # set extremely small values to zero
-    cosA = 0 if abs(cosA) < tol else cosA
-    cosB = 0 if abs(cosB) < tol else cosB
-    cosC = 0 if abs(cosC) < tol else cosC
+    cosA, cosB, cosC = _set_small_values_to_zero(tol, cosA, cosB, cosC)
     dirCosines = _co.namedtuple('dirCosines', ['alpha', 'beta', 'gamma'])
     return dirCosines(cosA, cosB, cosC)
 
-def get_zenith_azimuth_from_dir_cos(gamma, alpha, beta, atype='deg'):
-    """Returns the zenith and azimuth angles of the direction vector
-    given the direction cosines gamma, alpha and/or beta
+def zenith_azimuth_from_dir_cos(gamma, alpha, beta, atype='deg'):
+    """returns the zenith and azimuth angles of the direction vector given the 
+    direction cosines gamma, alpha and/or beta
 
     Parameters
     ----------
@@ -530,7 +557,7 @@ def get_zenith_azimuth_from_dir_cos(gamma, alpha, beta, atype='deg'):
     Examples
     --------
     >>> alpha, beta, gamma = 0.33682408883, 0.05939117461, 0.93969262078
-    >>> get_zenith_azimuth_from_dir_cos(gamma, alpha, beta)
+    >>> zenith_azimuth_from_dir_cos(gamma, alpha, beta)
     (20.000000001 10.0000000188)
 
     Notes
@@ -547,7 +574,9 @@ def get_zenith_azimuth_from_dir_cos(gamma, alpha, beta, atype='deg'):
 
     See Also
     --------
-    get_dir_cos_from_zenith_azimuth()
+    dir_cos_from_zenith_azimuth()
+    dir_cos_from_angles()
+    angles_from_dir_cos()
     """
     if atype not in ['deg', 'rad']:
         raise ValueError, "Invalid angle type specification"
@@ -559,18 +588,59 @@ def get_zenith_azimuth_from_dir_cos(gamma, alpha, beta, atype='deg'):
     else:
         return rayAngle(zenith, azimuth)
 
+def angles_from_dir_cos(gamma, alpha, beta, atype='deg', tol=1e-12):
+    """returns the angles of the direction vector w.r.t. the z, x, and y, axis 
+    given the direction cosines gamma, alpha and/or beta
+
+    Parameters
+    ----------
+    gamma : float
+        direction cosine, i.e. cos(theta_z)
+    alpha : float
+        direction cosine, i.e. cos(theta_x)
+    beta : float
+        direction cosine, i.e. cos(theta_y)
+    atype : string
+        string code indicating whether to return the angles in
+        degrees ('deg') or radians ('rad')
+    tol : float (very small number), optional
+        tol (default=1e-12) is the absolute value below which the direction 
+        cosine value is set to zero.
+
+    Returns
+    -------
+    theta_z : float
+        angle w.r.t. z-axis
+    theta_x : float
+        angle w.r.t. x-axis
+    theta_y : float
+        angle w.r.t. y-axis
+        
+    See Also
+    --------
+    zenith_azimuth_from_dir_cos()
+    angles_from_spatial_freq()
+    """
+    assert _is_dir_cos_valid(alpha, beta, gamma)
+    theta_z, theta_x, theta_y = [_math.acos(dc) for dc in (gamma, alpha, beta)]
+    theta_z, theta_x, theta_y = _set_small_values_to_zero(tol, theta_z, theta_x, theta_y)
+    if atype == 'deg':
+       theta_z, theta_x, theta_y = [t*180/_math.pi for t in (theta_z, theta_x, theta_y)]
+    angles = _co.namedtuple('angles', ['theta_z', 'theta_x', 'theta_y'])
+    return angles(theta_z, theta_x, theta_y)
+
 def get_alpha_beta_gamma_set(alpha=None, beta=None, gamma=None, forceZero='none'):
-    """Function to return the complete set of direction cosines alpha,
-    beta, and gamma, given a partial set.
+    """returns the complete set of direction cosines alpha, beta, and gamma, given a 
+    partial set.
 
     Parameters
     ----------
     alpha : float
-        Direction cosine, i.e. cos(A); see Notes.
+        Direction cosine, i.e. cos(theta_x); see Notes.
     beta : float
-        Direction cosine, i.e. cos(B); see Notes.
+        Direction cosine, i.e. cos(theta_y); see Notes.
     gamma : float
-        Direction cosine, i.e. cos(C); see Notes.
+        Direction cosine, i.e. cos(theta)z; see Notes.
     forceZero : string ('none' or 'alpha' or 'beta' or 'gamma')
         Force a particular direction cosine to be zero, in order to
         calculate the other two direction cosines when the wave vector
@@ -588,57 +658,310 @@ def get_alpha_beta_gamma_set(alpha=None, beta=None, gamma=None, forceZero='none'
 
     Notes
     -----
-    1. The function doesn't check for the validity of alpha, beta, and
-       gamma.
-    2. If the function returns (None, None, None), most likely 2 out of
-       the 3 input direction cosines given are zeros, and ``forceZero``
-       is ``none``. Please provide the appropriate value for the parameter
-       ``forceZero``.
-    3. A, B, C are angles that the wave vector ``k`` makes with x, y, and
-       z axis respectively.
+    1. The function doesn't check for the validity of alpha, beta, and gamma.
+    2. If the function returns (None, None, None), most likely 2 out of the 3 input 
+       direction cosines given are zeros, and ``forceZero`` is ``none``. Please 
+       provide the appropriate value for the parameter ``forceZero``.
+    3. theta_x, theta_y, theta_z are angles that the wave vector ``k`` makes with 
+       x, y, and z axis respectively.
 
     See Also
     --------
-    get_dir_cos_from_zenith_azimuth()
-    get_zenith_azimuth_from_dir_cos()
+    dir_cos_from_zenith_azimuth()
+    zenith_azimuth_from_dir_cos()
     """
     def f(x,y):
         return _np.sqrt(1.0 - x**2 - y**2)
     if forceZero == 'none':
-        if alpha and beta:
+        if alpha is not None and beta is not None:
             return alpha, beta, f(alpha, beta)
-        elif alpha and gamma:
+        elif alpha is not None and gamma is not None:
             return alpha, f(alpha, gamma), gamma
-        elif beta and gamma:
+        elif beta is not None and gamma is not None:
             return f(beta, gamma), beta, gamma
         else: # Error case
             return None, None, None
     elif forceZero == 'alpha':
-        if beta:
+        if beta is not None:
             return 0.0, beta, f(beta, 0)
         else:
             return 0.0, f(gamma, 0), gamma
     elif forceZero == 'beta':
-        if alpha:
+        if alpha is not None:
             return alpha, 0.0, f(alpha,0)
         else:
             return f(gamma, 0), 0.0, gamma
     else:  # forceZero='g'
-        if alpha:
+        if alpha is not None:
             return alpha, f(alpha,0), 0.0
         else:
             return f(beta, 0), beta, 0.0
 
+def spatial_freq_from_zenith_azimuth(zenith, azimuth, wave=550e-6, atype='deg', tol=1e-12):
+    """returns the spatial frequencies associated with a plane wave with wavevector 
+    having zenith and azimuth angle
+    
+    Parameters
+    ----------
+    zenith : float
+        angle of the direction vector with respect to the positive z-axis.
+        :math:`0 \leq \\theta \leq \pi`
+    azimuth : float
+        angle of the direction vector with respect to the positive x-axis.
+        :math:`0 \leq \phi \leq 2\pi`
+    wave : float, optional
+        wavelength in millimeters
+    atype : string  ('rad' or 'deg'), optional
+        angle unit in degree (default) or radians
+    tol : float (very small number), optional
+        tol (default=1e-12) is the absolute value below which the
+        direction cosine value is set to zero.
+        
+    Returns
+    -------
+    fx, fy, fz : tuple
+        spatial frequencies along x, y and z directions in cycles/mm
+    """
+    dirCos = dir_cos_from_zenith_azimuth(zenith, azimuth, atype, tol)
+    fx = dirCos.alpha/wave
+    fy = dirCos.beta/wave
+    fz = dirCos.gamma/wave
+    fx, fy, fz = _set_small_values_to_zero(tol, fx, fy, fz)
+    sfreq = _co.namedtuple('spatialFrequency', ['fx', 'fy', 'fz'])
+    return sfreq(fx, fy, fz)
 
-#--------------------------------
-# Miscellaneous helper functions
-#---------------------------------
+def spatial_freq_from_dir_cos(gamma=None, alpha=None, beta=None, wave=550e-6, tol=1e-12):
+    """returns the spatial frequencies associated with a plane wave with direction 
+    cosines gamma, alpha and/or beta
 
+    Parameters
+    ----------
+    gamma : float or None
+        direction cosine, i.e. cos(theta_z)
+    alpha : float or None
+        direction cosine, i.e. cos(theta_x)
+    beta : float or None
+        direction cosine, i.e. cos(theta_y)
+    wave : float, optional
+        wavelength in millimeters
+    tol : float (very small number), optional
+        tol (default=1e-12) is the absolute value below which the direction 
+        cosine value is set to zero.
+        
+    Returns
+    -------
+    fx, fy, fz : tuple
+        spatial frequencies along x, y and z directions in cycles/mm
+    
+    Notes
+    -----
+    1. At least 2 out of the 3 direction cosines must be specified.
+    """
+    if not all([alpha, beta, gamma]):
+        alpha, beta, gamma = get_alpha_beta_gamma_set(alpha, beta, gamma)
+    assert _is_dir_cos_valid(alpha, beta, gamma)
+    fx, fy, fz = _set_small_values_to_zero(tol, alpha/wave, beta/wave, gamma/wave)
+    sfreq = _co.namedtuple('spatialFrequency', ['fx', 'fy', 'fz'])
+    return sfreq(fx, fy, fz)  
 
+def spatial_freq_from_angles(theta_z, theta_x, theta_y, wave=550e-6, atype='deg', tol=1e-12):
+    """returns the spatial frequencies associated with a plane wave whose wave vector
+    makes angle theta_z w.r.t z-axis, theta_x w.r.t. x-axis, & theta_y w.r.t. y-axis
 
-# ---------------------------
-#   TEST FUNCTIONS
-# ---------------------------
+    Parameters
+    ----------
+    theta_z : float
+        angle w.r.t. z-axis
+    theta_x : float
+        angle w.r.t. x-axis
+    theta_y : float
+        angle w.r.t. y-axis
+    wave : float, optional
+        wavelength in millimeters
+    atype : string
+        string code indicating whether the specified angles is in degrees ('deg') 
+        or radians ('rad')
+    tol : float (very small number), optional
+        tol (default=1e-12) is the absolute value below which the direction 
+        cosine value is set to zero.
+        
+    Returns
+    -------
+    fx, fy, fz : tuple
+        spatial frequencies along x, y and z directions in cycles/mm
+    """
+    if atype == 'deg':
+        theta_z, theta_x, theta_y = [t*_math.pi/180 for t in (theta_z, theta_x, theta_y)]
+    gamma, alpha, beta = [_math.cos(t) for t in (theta_z, theta_x, theta_y)]
+    return spatial_freq_from_dir_cos(gamma, alpha, beta, wave, tol)
+    
+def zenith_azimuth_from_spatial_freq(fx, fy, fz, wave=550e-6, atype='deg', tol=1e-12):
+    """returns the zenith and azimuth angles associated with spatial frequencies
+
+    Parameters
+    ----------
+    fx : float
+        spatial frequency along x-axis (unit=cycles/mm)
+    fy : float
+        spatial frequency along y-axis (unit=cycles/mm)
+    fz : float
+        spatial frequency along z-axis (unit=cycles/mm)
+    wave : float, optional
+        wavelength in millimeters
+    atype : string
+        string code indicating whether the specified angles is in degrees ('deg') 
+        or radians ('rad')
+    tol : float (very small number), optional
+        tol (default=1e-12) is the absolute value below which the direction 
+        cosine value is set to zero.
+        
+    Returns
+    -------
+    zenith : float
+        angle of the direction vector with respect to the positive z-axis
+        :math:`0 \leq \\theta \leq \pi`
+    azimuth : float
+        angle of the direction vector with respect to the positive x-axis
+        :math:`0 \leq \phi \leq 2\pi`
+    """
+    raise NotImplementedError
+    
+def dir_cos_from_spatial_freq(fx=None, fy=None, fz=None, wave=550e-6, tol=1e-12):
+    """returns the direction cosines of the direction vector of a plane wave 
+    of given spatial frequency
+    
+    Parameters
+    ----------
+    fx : float
+        spatial frequency along x-axis (unit=cycles/mm)
+    fy : float
+        spatial frequency along y-axis (unit=cycles/mm)
+    fz : float
+        spatial frequency along z-axis (unit=cycles/mm)
+    wave : float, optional
+        wavelength in millimeters
+    tol : float (very small number), optional
+        tol (default=1e-12) is the absolute value below which the direction 
+        cosine value is set to zero.
+
+    Returns
+    -------
+    direction_cosines : tuple
+        (alpha, beta, gamma) are the direction cosines, which are
+        cos(A), cos(B), cos(C). Where A, B, C are angles that the wave 
+        vector ``k`` makes with x, y, and z axis respectively.
+        
+    See Also
+    --------
+    angles_from_spatial_freq(), 
+    """
+    spatialFreqNone = _first([fx, fy, fz], None)
+    if spatialFreqNone is not None:
+        if spatialFreqNone == 2:
+            a, b = wave*fx, wave*fy
+            alpha, beta, gamma = get_alpha_beta_gamma_set(alpha=a, beta=b, gamma=None)
+        elif spatialFreqNone == 1:
+            a, g = wave*fx, wave*fy
+            alpha, beta, gamma = get_alpha_beta_gamma_set(alpha=a, beta=None, gamma=g)
+        else:
+            b, g = wave*fy, wave*fz
+            alpha, beta, gamma = get_alpha_beta_gamma_set(alpha=None, beta=b, gamma=g)
+    else:
+        alpha, beta, gamma = wave*fx, wave*fy, wave*fz
+    assert _is_dir_cos_valid(alpha, beta, gamma)
+    dirCosines = _co.namedtuple('dirCosines', ['alpha', 'beta', 'gamma'])
+    return dirCosines(alpha, beta, gamma)
+    
+def angles_from_spatial_freq(fx=None, fy=None, fz=None, wave=550e-6, atype='deg', tol=1e-12):
+    """returns the angles w.r.t. x, y and z of the direction vector of a plane wave 
+    of given spatial frequency
+    
+    Parameters
+    ----------
+    fx : float
+        spatial frequency along x-axis (unit=cycles/mm)
+    fy : float
+        spatial frequency along y-axis (unit=cycles/mm)
+    fz : float
+        spatial frequency along z-axis (unit=cycles/mm)
+    wave : float, optional
+        wavelength in millimeters
+    atype : string, optional
+        string code indicating whether the returned angles is in degrees ('deg') 
+        or radians ('rad')
+    tol : float (very small number), optional
+        tol (default=1e-12) is the absolute value below which the direction 
+        cosine value is set to zero.
+
+    Returns
+    -------
+    theta_z : float
+        angle w.r.t. z-axis
+    theta_x : float
+        angle w.r.t. x-axis
+    theta_y : float
+        angle w.r.t. y-axis
+        
+    See Also
+    --------
+    angles_from_dir_cos(),
+    spatial_freq_from_angles()
+    """
+    dirCos = dir_cos_from_spatial_freq(fx, fy, fz, wave, tol)
+    return angles_from_dir_cos(dirCos.gamma, dirCos.alpha, dirCos.beta, atype, tol)
+
+def grating_refracted_angle(d, thetai, wave=550e-6, m=1, n1=1.0, n2=1.0, atype='deg'):
+    """returns the refracted angle using the grating equation
+    
+    Parameters
+    ----------
+    d : float
+        grating spacing in micrometer. 1/d is the grating frequency in lines/micrometer
+    thetai : float
+        incident angle
+    wave : float, optional
+        wavelength in millimeters
+    m : integer, optional
+        grating order
+    n1, n2 : float, optional
+        refractive indices at the input and output side respectively
+    atype : string, optional
+        whether the angle is specified (and returned) in degrees ('deg') or radians 
+        ('rad')
+        
+    Returns
+    -------
+    thetar : float
+        refracted angle
+    """
+    wave = wave*1000.0 # wavelength in microns
+    thetai = _math.radians(thetai) if atype=='deg' else thetai
+    thetar = _math.asin((n1*_math.sin(thetai) + m*wave/d)/n1)
+    thetar = _math.degrees(thetar) if atype=='deg' else thetar
+    return thetar
+
+#%% TEST FUNCTIONS
+
+def _test_set_small_values_to_zero():
+    """Test helper function _set_small_values_to_zero()"""
+    tol = 1e-12
+    a, b, c, d = _set_small_values_to_zero(tol, 1.0, 0.0, tol, 1e-13)
+    assert a == 1.0
+    assert b == 0.0
+    assert c == tol
+    assert d == 0.0
+    a, b, c, d = _set_small_values_to_zero(tol, -1.0, -0.0, -tol, -1e-13)
+    assert a == -1.0
+    assert b == -0.0
+    assert c == -tol
+    assert d == 0.0
+    print("test_set_small_values_to_zero() successful")
+    
+def _test_is_dir_cos_valid():
+    """Test helper function _is_dir_cos_valid()"""
+    assert _is_dir_cos_valid(1, 0, 0) == True
+    assert _is_dir_cos_valid(1.01, 0, 0) == False
+    print("test_is_dir_cos_valid() successful")
 
 def _test_fresnel_number():
     """Test fresnel_number function"""
@@ -679,38 +1002,38 @@ def _test_airy_pattern():
     nt.assert_almost_equal(_np.sum(I), 1.0, decimal=6)
     print("test_airy_patten() is successful")
 
-def _test_get_dir_cos_from_zenith_azimuth():
-    """Test get_dir_cos_from_zenith_azimuth function"""
-    a, b, g = get_dir_cos_from_zenith_azimuth(20.0, 10.0)
+def _test_dir_cos_from_zenith_azimuth():
+    """Test dir_cos_from_zenith_azimuth function"""
+    a, b, g = dir_cos_from_zenith_azimuth(20.0, 10.0)
     exp_array = _np.array([0.33682408883, 0.05939117461, 0.93969262078])
     nt.assert_array_almost_equal(_np.array([a, b, g]), exp_array, decimal=8)
-    a, b, g = get_dir_cos_from_zenith_azimuth(90.0, 0.0)
+    a, b, g = dir_cos_from_zenith_azimuth(90.0, 0.0)
     exp_array = _np.array([1.0, 0.0, 0.0])
     nt.assert_array_almost_equal(_np.array([a, b, g]), exp_array, decimal=8)
-    print("test_getDirCosinesFromZenithAndAzimuthAngles() is successful")
+    print("test_dir_cos_from_zenith_azimuth() is successful")
 
-def _test_get_zenith_azimuth_from_dir_cos():
-    """Test get_zenith_azimuth_from_dir_cos() function"""
+def _test_zenith_azimuth_from_dir_cos():
+    """Test zenith_azimuth_from_dir_cos() function"""
     alpha, beta, gamma = 0.33682408883, 0.05939117461, 0.93969262078
-    zenith, azimuth = get_zenith_azimuth_from_dir_cos(gamma, alpha, beta)
+    zenith, azimuth = zenith_azimuth_from_dir_cos(gamma, alpha, beta)
     nt.assert_array_almost_equal(_np.array((zenith, azimuth)),
                                  _np.array((20.0, 10.0)), decimal=7)
-    zenith, azimuth = get_zenith_azimuth_from_dir_cos(gamma, alpha, beta,
+    zenith, azimuth = zenith_azimuth_from_dir_cos(gamma, alpha, beta,
                                                       atype='rad')
     nt.assert_array_almost_equal(_np.array((zenith, azimuth)),
                                  _np.array((0.349065850416, 0.17453292518)),
                                  decimal=7)
     try:
-        zenith, azimuth = get_zenith_azimuth_from_dir_cos(gamma, alpha, beta,
+        zenith, azimuth = zenith_azimuth_from_dir_cos(gamma, alpha, beta,
                                                           atype='invalid')
     except ValueError: # as e:
         #nt.assert_string_equal(e, 'Invalid angle type specification')
         pass
-    zenith, azimuth = get_zenith_azimuth_from_dir_cos(0.9950371902099892,
-                                                      0.0,
-                                                      0.099503719020998957)
+    zenith, azimuth = zenith_azimuth_from_dir_cos(0.9950371902099892,
+                                                  0.0,
+                                                  0.099503719020998957)
     nt.assert_almost_equal(azimuth, 90.0, decimal=8)
-    print("test_get_zenith_azimuth_from_dir_cos() is successful")
+    print("test_zenith_azimuth_from_dir_cos() is successful")
 
 def _test_get_alpha_beta_gamma_set():
     """Test get_alpha_beta_gamma_set() function"""
@@ -730,6 +1053,34 @@ def _test_get_alpha_beta_gamma_set():
     exp_array = _np.array((0.33682408883, 0.05939117461, 0.93969262078))
     nt.assert_array_almost_equal(_np.array((a, b, g)), exp_array, decimal=8)
     print("test_get_alpha_beta_gamma_set() is successful")
+    
+def _test_spatial_freq_from_zenith_azimuth():
+    #TODO!!!
+    pass
+
+def _test_spatial_freq_from_dir_cos():
+    #TODO!!!
+    pass
+
+def _test_spatial_freq_from_angles():
+    #TODO!!!
+    pass 
+
+def _test_angles_from_dir_cos():
+    #TODO!!!
+    pass
+
+def _test_zenith_azimuth_from_spatial_freq():
+    #TODO!!!
+    pass
+
+def _test_angles_from_spatial_freq():
+    #TODO!!!
+    pass
+
+def _test_dir_cos_from_spatial_freq():
+    #TODO!!!
+    pass
 
 def _test_seidel_5():
     """Test seidel_5 function"""
@@ -765,13 +1116,19 @@ def _test_geometric_depth_of_field():
     #TODO!!!
     pass
 
+def _test_grating_refracted_angle():
+    #TODO!!!
+    pass
+
 if __name__ == '__main__':
     import numpy.testing as nt
     from numpy import set_printoptions
     set_printoptions(precision=4, linewidth=85)  # for visual output in manual tests.
+    _test_set_small_values_to_zero()
+    _test_is_dir_cos_valid()
     _test_fresnel_number()
     _test_airy_pattern()
-    _test_get_dir_cos_from_zenith_azimuth()
-    _test_get_zenith_azimuth_from_dir_cos()
+    _test_dir_cos_from_zenith_azimuth()
+    _test_zenith_azimuth_from_dir_cos()
     _test_get_alpha_beta_gamma_set()
     _test_depth_of_focus()
