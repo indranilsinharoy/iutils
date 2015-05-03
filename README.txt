@@ -1,10 +1,13 @@
-This is a collection of my utility programs.
-The programs are not meant to be polished, but workable.
+Collection of my Python utility programs that I use in my own research work.
 
-I update this repo regularly @ Bitbucket (a private repo), and from time to time update the public repo @ Github.
+The code here is not meant to be release quality, but they are workable, and I strive to write
+as well as I can. I also try to revisit the code from time to time to improve the quality.
 
+All programs, if not exclusively stated in the individual file, are licensed under MIT license.
 
-All code, if not exclusively stated in the individual file, are licensed under MIT license.
+Please feel free to use it if you find any of them useful for your own work.
+
+Both performance and general accuracy of the code is not guaranteed. 
 
 Indranil Sinharoy.
 

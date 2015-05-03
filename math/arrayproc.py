@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #-------------------------------------------------------------------------------
-# Name:          aputils.py
+# Name:          arrayproc.py
 # Purpose:       Array Processing Utilities
 #
 # Author:        Indranil Sinharoy

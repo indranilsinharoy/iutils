@@ -25,6 +25,28 @@ import collections as _co
 
 def _set_small_values_to_zero(tol, *values):
     """helper function to set infinitesimally small values to zero
+    
+    Parameters
+    ----------
+    tol : float
+        threshold. All numerical values below abs(tol) is set to zero
+    *values : unflattened sequence of values
+        
+    Returns
+    -------
+    
+    Example
+    -------
+    >>> tol = 1e-12
+    >>> a, b, c, d = _set_small_values_to_zero(tol, 1.0, 0.0, tol, 1e-13)
+    >>> a 
+    1.0
+    >>> b 
+    0.0
+    >>> c 
+    1e-12
+    >>> d
+    0.0
     """
     return [0 if abs(value) < tol else value for value in values]
 

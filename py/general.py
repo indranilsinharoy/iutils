@@ -6,16 +6,15 @@
 # Author:        Indranil Sinharoy
 #
 # Created:       07/25/2013
-# Last Modified: 11/20/2013
-#                1. Moved find_zero_crossings() from here to plottingUtils.py
-# Copyright:     (c) Indranil Sinharoy 2013
+# Last Modified: 04/30/2015
+# Copyright:     (c) Indranil Sinharoy 2013 - 2015
 # Licence:       MIT License
 #-------------------------------------------------------------------------------
 from __future__ import division, print_function
-import sys
+import sys as _sys
 from os import listdir as _listdir, getcwd as _getcwd
 import hashlib as _hashlib
-from subprocess import call
+from subprocess import call as _call
 
 
 def is64bit():
@@ -35,7 +34,7 @@ def is64bit():
     # As per the discussion at (http://stackoverflow.com/questions/1842544/how-do-i-
     # detect-if-python-is-running-as-a-64-bit-application) I think the following is
     # the best way to determine the "bitness" of the system.
-    return sys.maxsize > 2**31 - 1
+    return _sys.maxsize > 2**31 - 1
 
 
 def find_zero_crossings(f, a, b, func_args=(), n=100):
@@ -77,7 +76,7 @@ def _convert(f):
         cmd = "ipython nbconvert --to html --quiet \"{fn}\"".format(fn=f)
         #print(cmd) # for debugging
         # Wait for the command(s) to get executed ...
-        call(cmd, shell=True)
+        _call(cmd, shell=True)
     except:
         return 0
     else:
@@ -151,9 +150,35 @@ def remove_duplicates_in_list(seq):
     return newSeq
 
 
-# ---------------------------
-#   TEST FUNCTIONS
-# ---------------------------
+def set_small_values_to_zero(tol, *values):
+    """helper function to set infinitesimally small values to zero
+    
+    Parameters
+    ----------
+    tol : float
+        threshold. All numerical values below abs(tol) is set to zero
+    *values : unflattened sequence of values
+        
+    Returns
+    -------
+    
+    Example
+    -------
+    >>> tol = 1e-12
+    >>> a, b, c, d = _set_small_values_to_zero(tol, 1.0, 0.0, tol, 1e-13)
+    >>> a 
+    1.0
+    >>> b 
+    0.0
+    >>> c 
+    1e-12
+    >>> d
+    0.0
+    """
+    return [0 if abs(value) < tol else value for value in values]
+
+#%% TEST FUNCTIONS
+
 def _test_is64bit():
     """For obvious reasons, this is not an automated test. i.e. it requires a visual inspection"""
     print("\nTest for 32/64 bitness of Python system")
@@ -165,6 +190,21 @@ def _test_remove_duplicates_in_list():
     exp_ret = [1, 2, 4, 3, 6, 5, 10, 20, 21, 8]
     ret = remove_duplicates_in_list(a)
     _nt.assert_array_equal(exp_ret, ret)
+    
+def _test_set_small_values_to_zero():
+    """Test helper function _set_small_values_to_zero()"""
+    tol = 1e-12
+    a, b, c, d = set_small_values_to_zero(tol, 1.0, 0.0, tol, 1e-13)
+    assert a == 1.0
+    assert b == 0.0
+    assert c == tol
+    assert d == 0.0
+    a, b, c, d = set_small_values_to_zero(tol, -1.0, -0.0, -tol, -1e-13)
+    assert a == -1.0
+    assert b == -0.0
+    assert c == -tol
+    assert d == 0.0
+    print("test_set_small_values_to_zero() successful")
 
 
 if __name__=="__main__":
@@ -173,3 +213,4 @@ if __name__=="__main__":
     set_printoptions(precision=4, linewidth=85)  # for visual output in manual tests.
     _test_is64bit()
     _test_remove_duplicates_in_list()
+    _test_set_small_values_to_zero()
