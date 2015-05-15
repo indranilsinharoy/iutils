@@ -18,7 +18,7 @@ import math as _math
 import numpy as _np
 from iutils.signal.signals import jinc as _jinc
 import iutils.optics.imager as _imgr
-#import warnings as _warnings
+import warnings as _warnings
 import collections as _co
 
 #%% Module helper functions
@@ -50,12 +50,14 @@ def _set_small_values_to_zero(tol, *values):
     """
     return [0 if abs(value) < tol else value for value in values]
 
-def _is_dir_cos_valid(alpha, beta, gamma):
+def _is_dir_cos_valid(alpha, beta, gamma, tol=1e-12):
     """test the validity of direction cosines
     returns ``True`` if valid, ``False`` if not
     """
-    if abs(alpha**2 + beta**2 + gamma**2 - 1) > 1e-12:
-        print('The sum of squares of the direction cosines is not equal to 1')
+    absdiff = abs(alpha**2 + beta**2 + gamma**2 - 1)
+    if absdiff > tol:
+        print('The sum of squares of the direction cosines is not approximately '
+              'equal to 1. The absolute difference is {:2.4E}'.format(absdiff))
         return False
     else:
         return True
@@ -75,7 +77,7 @@ def _first(iterable, what, test='equality'):
 
 #%% Fourier optics related functions
 
-def fresnel_number(r, z, wl=550e-6, approx=False):
+def fresnel_number(r, z, wavelen=550e-6, approx=False):
     """calculate the fresnel number
 
     Parameters
@@ -86,7 +88,7 @@ def fresnel_number(r, z, wl=550e-6, approx=False):
         distance of the observation plane from the aperture. this is equal
         to the focal length of the lens for infinite conjugate, or the
         image plane distance, in the same units of length as ``r``
-    wl : float, optional
+    wavelen : float, optional
         wavelength of light (default=550e-6 mm)
     approx : boolean, optional
         if ``True``, uses the approximate expression (default is ``False``)
@@ -113,11 +115,34 @@ def fresnel_number(r, z, wl=550e-6, approx=False):
     .. [Born&Wolf2011] Principles of Optics, Born and Wolf, 2011
     """
     if approx:
-        return (r**2)/(wl*z)
+        return (r**2)/(wavelen*z)
     else:
-        return 2.0*(_math.sqrt(z**2 + r**2) - z)/wl
+        return 2.0*(_math.sqrt(z**2 + r**2) - z)/wavelen
+        
+def fraunhofer_distance(d=1.0, wavelen=550e-6):
+    """computes the Fraunhofer distance from a diffracting aperture. It is the
+    limit between the near and far field
+    
+    Parameters
+    ----------
+    d : float
+        largest dimension of the aperture. i.e. aperture width/diameter (in mm)
+    wl : float
+        wavelength of light (in mm)
+    
+    Returns
+    -------
+    fdist : float
+        the Fraunhofer distance in mm
+        
+    Notes
+    -----
+    This is the more stringent condition for the Fraunhofer Approximation. 
+    Therefore the far-field is the region where ``z > fraunhofer_distance``
+    """
+    return 2.0*d**2 / wavelen
 
-def diffraction_spot_size(fnum=None, r=None, zi=None, wl=550e-6):
+def diffraction_spot_size(fnum=None, r=None, zi=None, wavelen=550e-6):
     """calculate the diffraction limited spot size, assuming circular
     aperture. Specify either ``fnum`` or ``r`` and ``zi``
 
@@ -134,7 +159,7 @@ def diffraction_spot_size(fnum=None, r=None, zi=None, wl=550e-6):
         same units of length as ``r``. For objects at infinity, ``zi`` is
         the focal length of the lens. If ``fnum`` is also specified, then ``r``
         is ignored.
-    wl : float, optional
+    wavelen : float, optional
         wavelength of light (default=550e-6 mm)
 
     Returns
@@ -142,7 +167,7 @@ def diffraction_spot_size(fnum=None, r=None, zi=None, wl=550e-6):
     spot_size : float
         The diffraction limited spot size given as 2.44*lambda*f/#
     """
-    spotSize = 2.44*wl*fnum if fnum else 1.22*wl*(zi/r)
+    spotSize = 2.44*wavelen*fnum if fnum else 1.22*wavelen*(zi/r)
     return spotSize
 
 def effective_fnumber(fnum, m=None, zxp=None, f=None):
@@ -177,13 +202,11 @@ def effective_fnumber(fnum, m=None, zxp=None, f=None):
     return fnumEff
 
 
-def airy_pattern(wl, r, zxp, rho, norm=1):
-    """Fraunhoffer intensity diffraction pattern for a circular aperture
+def airy_pattern(r, zxp, rho, wavelen, norm=1):
+    """Fraunhofer intensity diffraction pattern for a circular aperture
 
     Parameters
     ----------
-    wl : float
-        wavelength in physical units (same unit of ``r``, ``zxp``, ``rho``)
     r : float
         radius of the aperture
     zxp : float
@@ -191,6 +214,8 @@ def airy_pattern(wl, r, zxp, rho, norm=1):
     rho : ndarray
         radial coordinate in the screen/image plane (such as constructed
         using ``meshgrid``)
+    wavelen : float
+        wavelength in physical units (same unit of ``r``, ``zxp``, ``rho``)
     norm : integer (0 or 1 or 2), optional
         0 = None;
         1 = Peak value is 1.0 (default);
@@ -199,14 +224,14 @@ def airy_pattern(wl, r, zxp, rho, norm=1):
     Returns
     -------
     pattern : ndarray
-        Fraunhoffer diffraction pattern (Airy pattern)
+        Fraunhofer diffraction pattern (Airy pattern)
 
     Examples
     --------
-    This example creates an airy pattern for light wave of 0.55 microns
-    wavelength diffracting through an unaberrated lens of focal length
-    50 mm, and epd 20 mm. The airy pattern is generated on a spatial grid
-    which extends between -5*lambda and 5*lambda along both X and Y
+    This example creates an airy pattern for light of 0.55 μm wavelength
+    diffracting through an unaberrated lens of focal length 50 mm, and 
+    EPD 20 mm. The airy pattern is generated on a spatial grid that extends 
+    between -5λ and 5λ along both x and y
 
     >>> lamba = 550e-6
     >>> M, N = 513, 513            # odd grid for symmetry
@@ -215,21 +240,24 @@ def airy_pattern(wl, r, zxp, rho, norm=1):
     >>> x = (np.linspace(0, N-1, N) - N//2)*dx
     >>> y = (np.linspace(0, M-1, M) - M//2)*dy
     >>> xx, yy = np.meshgrid(x, y)
-    >>> r = np.hypot(xx, yy)
+    >>> rho = np.hypot(xx, yy)
     >>> w = 10                    # radius, in mm
     >>> z = 50                    # z-distance, in mm
-    >>> ipsf = fou.airy_pattern(lamba, w, z, r, 1)
+    >>> ipsf = fou.airy_pattern(w, z, rho, lamba, 1)
     """
+    #TODO!!! (remove this warning in future)
+    if r < 1e-3 :  # was possibly was for wavelength
+        _warnings.warn('API has changed. Please ensure parameter validity!')
     # The jinc() function used here is defined as jinc(x) = J_1(x)/x, jinc(0) = 0.5
-    pattern = ((_np.pi*r**2/(wl*zxp))
-               *2*_jinc(2*_np.pi*r*rho/(wl*zxp), normalize=False))**2
+    pattern = ((_np.pi*r**2/(wavelen*zxp))
+               *2*_jinc(2*_np.pi*r*rho/(wavelen*zxp), normalize=False))**2
     if norm==1:
         pattern = pattern/_np.max(pattern)
     elif norm==2:
         pattern = pattern/_np.sum(pattern)
     return pattern
 
-def depth_of_focus(effFNum, wavelength=550e-6, firstZero=False, full=False):
+def depth_of_focus(effFNum, wavelen=550e-6, firstZero=False, full=False):
     """half diffractive optical focus depth, ``delta_z``, in the image
     space.
 
@@ -243,9 +271,8 @@ def depth_of_focus(effFNum, wavelength=550e-6, firstZero=False, full=False):
         conjugate imaging, and ``zi/D`` for finite conjugate imaging;
         ``f`` is the focal length, ``zi`` is the gaussian image distance,
         ``D`` is the entrance pupil diameter.
-    wavelength : float, optional
-        wavelength of light (default=550e-6, note that the default's
-        unit is mm)
+    wavelen : float, optional
+        wavelength of light (default=550e-6 mm)
     firstZero : boolean, optional
         Normally the DOF is the region between the focal point (max
         intensity) on the axis and a point along the axis where the
@@ -267,14 +294,14 @@ def depth_of_focus(effFNum, wavelength=550e-6, firstZero=False, full=False):
     .. [Gross2007] Handbook of Optical Systems. Aberration Theory, Vol-3
     """
     if firstZero:
-        deltaZ = 8.0*wavelength*effFNum**2
+        deltaZ = 8.0*wavelen*effFNum**2
     else:
-        deltaZ = (6.4*wavelength*effFNum**2)/_np.pi
+        deltaZ = (6.4*wavelen*effFNum**2)/_np.pi
     if full:
         deltaZ = deltaZ*2.0
     return deltaZ
 
-def depth_of_field(focalLength, fNumber, objDist, wavelength=550e-6, firstZero=False):
+def depth_of_field(focalLength, fNumber, objDist, wavelen=550e-6, firstZero=False):
     """Returns the diffraction based depth of field in the object space
 
     Parameters
@@ -289,7 +316,7 @@ def depth_of_field(focalLength, fNumber, objDist, wavelength=550e-6, firstZero=F
     objDist : float
         distance of the object plane from the lens in the same units
         as ``focalLength``
-    wavelength : float
+    wavelen : float
         the wavelength of light in the same units of ``focalLength``
         (default=550e-6, note that the default's unit is mm)
     firstZero : boolean, optional
@@ -313,7 +340,7 @@ def depth_of_field(focalLength, fNumber, objDist, wavelength=550e-6, firstZero=F
     """
     imgDist = objDist*focalLength/(objDist - focalLength) # geometric image point
     effFNum = (imgDist/focalLength)*fNumber
-    deltaZ = depth_of_focus(effFNum, wavelength, firstZero)   # half diffraction DOF
+    deltaZ = depth_of_focus(effFNum, wavelen, firstZero)   # half diffraction DOF
     # far (w.r.t. lens) extent of the plane in acceptable focus
     dofFar =  (imgDist - deltaZ)*focalLength/((imgDist - deltaZ) - focalLength)
     # near (w.r.t. lens) extent of the plane in acceptable focus
@@ -397,7 +424,7 @@ def defocus(w020, radius, zi):
     """
     return (2.0*zi**2*w020)/(radius**2 - 2.0*zi*w020)
 
-def w020_from_defocus(radius, zi, deltaZ, waveLength=1.0):
+def w020_from_defocus(radius, zi, deltaZ, wavelen=1.0):
     """Return the maximum wavefront error corresponding to defocus amount
     `deltaZ`
 
@@ -413,8 +440,8 @@ def w020_from_defocus(radius, zi, deltaZ, waveLength=1.0):
         The amount of defocus/focus-shift along the optical axis.
         Generally ``deltaZ = za - zi`` where ``za`` is the point of
         convergence of the actual/aberrated wavefront on the optical axis.
-    waveLength : float
-        The ``waveLength`` is used to specify a wave length if the
+    wavelen : float
+        The ``waveLength`` is used to specify a wavelength if the
         coefficient w020 needs to be "relative to the wavelength"
 
     Returns
@@ -441,7 +468,7 @@ def w020_from_defocus(radius, zi, deltaZ, waveLength=1.0):
     defocus()
     """
     w020 = (deltaZ*radius**2)/(2.0*zi*(zi + deltaZ))
-    return w020/waveLength
+    return w020/wavelen
 
 def seidel_5(u0, v0, X, Y, wd=0, w040=0, w131=0, w222=0, w220=0, w311=0):
     """Computer wavefront OPD for first 5 Seidel wavefront aberration
@@ -652,25 +679,26 @@ def angles_from_dir_cos(gamma, alpha, beta, atype='deg', tol=1e-12):
     return angles(theta_z, theta_x, theta_y)
 
 def get_alpha_beta_gamma_set(alpha=None, beta=None, gamma=None, forceZero='none'):
-    """returns the complete set of direction cosines alpha, beta, and gamma, given a 
-    partial set.
+    """returns the complete set of direction cosines {α, β, γ} given a partial set. Use 
+    `None` for the unknowns
 
     Parameters
     ----------
     alpha : float
-        Direction cosine, i.e. cos(theta_x); see Notes.
+        x-direction cosine, cos(θ_x)
     beta : float
-        Direction cosine, i.e. cos(theta_y); see Notes.
+        y-direction cosine, cos(θ_y)
     gamma : float
-        Direction cosine, i.e. cos(theta)z; see Notes.
-    forceZero : string ('none' or 'alpha' or 'beta' or 'gamma')
+        z-direction cosine, cos(θ_z)
+    forceZero : string ('none', 'alpha', 'beta' or 'gamma')
         Force a particular direction cosine to be zero, in order to
-        calculate the other two direction cosines when the wave vector
-        is restricted to a either x-y, or y-z, or x-z plane.
+        calculate the other two direction cosines when the wavevector (ḵ)
+        is restricted to either x-y, or y-z, or x-z plane -- α=0 if ḵ is
+        in y-z plane, β=0 if ḵ is in x-z plane, and γ=0 if ḵ is in x-y plane
 
     Returns
     -------
-    direction_cosines : tuple
+    dircosines : tuple of floats
         (alpha, beta, gamma)
 
     Warnings
@@ -680,17 +708,14 @@ def get_alpha_beta_gamma_set(alpha=None, beta=None, gamma=None, forceZero='none'
 
     Notes
     -----
-    1. The function doesn't check for the validity of alpha, beta, and gamma.
-    2. If the function returns (None, None, None), most likely 2 out of the 3 input 
-       direction cosines given are zeros, and ``forceZero`` is ``none``. Please 
-       provide the appropriate value for the parameter ``forceZero``.
-    3. theta_x, theta_y, theta_z are angles that the wave vector ``k`` makes with 
+    1. The function doesn't check for the validity of {α, β, γ}. Use 
+       `fou._is_dir_cos_valid()` if you need to.
+    2. θ_x, θ_y, θ_z are angles that the wavevector ``k`` makes with 
        x, y, and z axis respectively.
 
     See Also
     --------
-    dir_cos_from_zenith_azimuth()
-    zenith_azimuth_from_dir_cos()
+    dir_cos_from_zenith_azimuth(), zenith_azimuth_from_dir_cos()
     """
     def f(x,y):
         return _np.sqrt(1.0 - x**2 - y**2)
@@ -701,8 +726,8 @@ def get_alpha_beta_gamma_set(alpha=None, beta=None, gamma=None, forceZero='none'
             return alpha, f(alpha, gamma), gamma
         elif beta is not None and gamma is not None:
             return f(beta, gamma), beta, gamma
-        else: # Error case
-            return None, None, None
+        #else: # Error case
+        #    return None, None, None
     elif forceZero == 'alpha':
         if beta is not None:
             return 0.0, beta, f(beta, 0)
@@ -719,7 +744,7 @@ def get_alpha_beta_gamma_set(alpha=None, beta=None, gamma=None, forceZero='none'
         else:
             return f(beta, 0), beta, 0.0
 
-def spatial_freq_from_zenith_azimuth(zenith, azimuth, wave=550e-6, atype='deg', tol=1e-12):
+def spatial_freq_from_zenith_azimuth(zenith, azimuth, wavelen=550e-6, atype='deg', tol=1e-12):
     """returns the spatial frequencies associated with a plane wave with wavevector 
     having zenith and azimuth angle
     
@@ -731,7 +756,7 @@ def spatial_freq_from_zenith_azimuth(zenith, azimuth, wave=550e-6, atype='deg', 
     azimuth : float
         angle of the direction vector with respect to the positive x-axis.
         :math:`0 \leq \phi \leq 2\pi`
-    wave : float, optional
+    wavelen : float, optional
         wavelength in millimeters
     atype : string  ('rad' or 'deg'), optional
         angle unit in degree (default) or radians
@@ -745,14 +770,14 @@ def spatial_freq_from_zenith_azimuth(zenith, azimuth, wave=550e-6, atype='deg', 
         spatial frequencies along x, y and z directions in cycles/mm
     """
     dirCos = dir_cos_from_zenith_azimuth(zenith, azimuth, atype, tol)
-    fx = dirCos.alpha/wave
-    fy = dirCos.beta/wave
-    fz = dirCos.gamma/wave
+    fx = dirCos.alpha/wavelen
+    fy = dirCos.beta/wavelen
+    fz = dirCos.gamma/wavelen
     fx, fy, fz = _set_small_values_to_zero(tol, fx, fy, fz)
     sfreq = _co.namedtuple('spatialFrequency', ['fx', 'fy', 'fz'])
     return sfreq(fx, fy, fz)
 
-def spatial_freq_from_dir_cos(gamma=None, alpha=None, beta=None, wave=550e-6, tol=1e-12):
+def spatial_freq_from_dir_cos(gamma=None, alpha=None, beta=None, wavelen=550e-6, tol=1e-12):
     """returns the spatial frequencies associated with a plane wave with direction 
     cosines gamma, alpha and/or beta
 
@@ -764,7 +789,7 @@ def spatial_freq_from_dir_cos(gamma=None, alpha=None, beta=None, wave=550e-6, to
         direction cosine, i.e. cos(theta_x)
     beta : float or None
         direction cosine, i.e. cos(theta_y)
-    wave : float, optional
+    wavelen : float, optional
         wavelength in millimeters
     tol : float (very small number), optional
         tol (default=1e-12) is the absolute value below which the direction 
@@ -782,11 +807,11 @@ def spatial_freq_from_dir_cos(gamma=None, alpha=None, beta=None, wave=550e-6, to
     if not all([alpha, beta, gamma]):
         alpha, beta, gamma = get_alpha_beta_gamma_set(alpha, beta, gamma)
     assert _is_dir_cos_valid(alpha, beta, gamma)
-    fx, fy, fz = _set_small_values_to_zero(tol, alpha/wave, beta/wave, gamma/wave)
+    fx, fy, fz = _set_small_values_to_zero(tol, alpha/wavelen, beta/wavelen, gamma/wavelen)
     sfreq = _co.namedtuple('spatialFrequency', ['fx', 'fy', 'fz'])
     return sfreq(fx, fy, fz)  
 
-def spatial_freq_from_angles(theta_z, theta_x, theta_y, wave=550e-6, atype='deg', tol=1e-12):
+def spatial_freq_from_angles(theta_z, theta_x, theta_y, wavelen=550e-6, atype='deg', tol=1e-12):
     """returns the spatial frequencies associated with a plane wave whose wave vector
     makes angle theta_z w.r.t z-axis, theta_x w.r.t. x-axis, & theta_y w.r.t. y-axis
 
@@ -798,7 +823,7 @@ def spatial_freq_from_angles(theta_z, theta_x, theta_y, wave=550e-6, atype='deg'
         angle w.r.t. x-axis
     theta_y : float
         angle w.r.t. y-axis
-    wave : float, optional
+    wavelen : float, optional
         wavelength in millimeters
     atype : string
         string code indicating whether the specified angles is in degrees ('deg') 
@@ -815,9 +840,9 @@ def spatial_freq_from_angles(theta_z, theta_x, theta_y, wave=550e-6, atype='deg'
     if atype == 'deg':
         theta_z, theta_x, theta_y = [t*_math.pi/180 for t in (theta_z, theta_x, theta_y)]
     gamma, alpha, beta = [_math.cos(t) for t in (theta_z, theta_x, theta_y)]
-    return spatial_freq_from_dir_cos(gamma, alpha, beta, wave, tol)
+    return spatial_freq_from_dir_cos(gamma, alpha, beta, wavelen, tol)
     
-def zenith_azimuth_from_spatial_freq(fx, fy, fz, wave=550e-6, atype='deg', tol=1e-12):
+def zenith_azimuth_from_spatial_freq(fx, fy, fz, wavelen=550e-6, atype='deg', tol=1e-12):
     """returns the zenith and azimuth angles associated with spatial frequencies
 
     Parameters
@@ -828,7 +853,7 @@ def zenith_azimuth_from_spatial_freq(fx, fy, fz, wave=550e-6, atype='deg', tol=1
         spatial frequency along y-axis (unit=cycles/mm)
     fz : float
         spatial frequency along z-axis (unit=cycles/mm)
-    wave : float, optional
+    wavelen : float, optional
         wavelength in millimeters
     atype : string
         string code indicating whether the specified angles is in degrees ('deg') 
@@ -848,7 +873,7 @@ def zenith_azimuth_from_spatial_freq(fx, fy, fz, wave=550e-6, atype='deg', tol=1
     """
     raise NotImplementedError
     
-def dir_cos_from_spatial_freq(fx=None, fy=None, fz=None, wave=550e-6, tol=1e-12):
+def dir_cos_from_spatial_freq(fx=None, fy=None, fz=None, wavelen=550e-6, tol=1e-12):
     """returns the direction cosines of the direction vector of a plane wave 
     of given spatial frequency
     
@@ -860,7 +885,7 @@ def dir_cos_from_spatial_freq(fx=None, fy=None, fz=None, wave=550e-6, tol=1e-12)
         spatial frequency along y-axis (unit=cycles/mm)
     fz : float
         spatial frequency along z-axis (unit=cycles/mm)
-    wave : float, optional
+    wavelen : float, optional
         wavelength in millimeters
     tol : float (very small number), optional
         tol (default=1e-12) is the absolute value below which the direction 
@@ -880,21 +905,21 @@ def dir_cos_from_spatial_freq(fx=None, fy=None, fz=None, wave=550e-6, tol=1e-12)
     spatialFreqNone = _first([fx, fy, fz], None)
     if spatialFreqNone is not None:
         if spatialFreqNone == 2:
-            a, b = wave*fx, wave*fy
+            a, b = wavelen*fx, wavelen*fy
             alpha, beta, gamma = get_alpha_beta_gamma_set(alpha=a, beta=b, gamma=None)
         elif spatialFreqNone == 1:
-            a, g = wave*fx, wave*fy
+            a, g = wavelen*fx, wavelen*fy
             alpha, beta, gamma = get_alpha_beta_gamma_set(alpha=a, beta=None, gamma=g)
         else:
-            b, g = wave*fy, wave*fz
+            b, g = wavelen*fy, wavelen*fz
             alpha, beta, gamma = get_alpha_beta_gamma_set(alpha=None, beta=b, gamma=g)
     else:
-        alpha, beta, gamma = wave*fx, wave*fy, wave*fz
+        alpha, beta, gamma = wavelen*fx, wavelen*fy, wavelen*fz
     assert _is_dir_cos_valid(alpha, beta, gamma)
     dirCosines = _co.namedtuple('dirCosines', ['alpha', 'beta', 'gamma'])
     return dirCosines(alpha, beta, gamma)
     
-def angles_from_spatial_freq(fx=None, fy=None, fz=None, wave=550e-6, atype='deg', tol=1e-12):
+def angles_from_spatial_freq(fx=None, fy=None, fz=None, wavelen=550e-6, atype='deg', tol=1e-12):
     """returns the angles w.r.t. x, y and z of the direction vector of a plane wave 
     of given spatial frequency
     
@@ -906,7 +931,7 @@ def angles_from_spatial_freq(fx=None, fy=None, fz=None, wave=550e-6, atype='deg'
         spatial frequency along y-axis (unit=cycles/mm)
     fz : float
         spatial frequency along z-axis (unit=cycles/mm)
-    wave : float, optional
+    wavelen : float, optional
         wavelength in millimeters
     atype : string, optional
         string code indicating whether the returned angles is in degrees ('deg') 
@@ -929,10 +954,10 @@ def angles_from_spatial_freq(fx=None, fy=None, fz=None, wave=550e-6, atype='deg'
     angles_from_dir_cos(),
     spatial_freq_from_angles()
     """
-    dirCos = dir_cos_from_spatial_freq(fx, fy, fz, wave, tol)
+    dirCos = dir_cos_from_spatial_freq(fx, fy, fz, wavelen, tol)
     return angles_from_dir_cos(dirCos.gamma, dirCos.alpha, dirCos.beta, atype, tol)
 
-def grating_refracted_angle(d, thetai, wave=550e-6, m=1, n1=1.0, n2=1.0, atype='deg'):
+def grating_refracted_angle(d, thetai, wavelen=550e-6, m=1, n1=1.0, n2=1.0, atype='deg'):
     """returns the refracted angle using the grating equation
     
     Parameters
@@ -941,7 +966,7 @@ def grating_refracted_angle(d, thetai, wave=550e-6, m=1, n1=1.0, n2=1.0, atype='
         grating spacing in micrometer. 1/d is the grating frequency in lines/micrometer
     thetai : float
         incident angle
-    wave : float, optional
+    wavelen : float, optional
         wavelength in millimeters
     m : integer, optional
         grating order
@@ -956,11 +981,14 @@ def grating_refracted_angle(d, thetai, wave=550e-6, m=1, n1=1.0, n2=1.0, atype='
     thetar : float
         refracted angle
     """
-    wave = wave*1000.0 # wavelength in microns
+    wavelen = wavelen*1000.0 # wavelength in microns
     thetai = _math.radians(thetai) if atype=='deg' else thetai
-    thetar = _math.asin((n1*_math.sin(thetai) + m*wave/d)/n1)
+    thetar = _math.asin((n1*_math.sin(thetai) + m*wavelen/d)/n1)
     thetar = _math.degrees(thetar) if atype=='deg' else thetar
     return thetar
+    
+#%% Miscellaneous helper functions
+    
 
 #%% TEST FUNCTIONS
 
@@ -1005,7 +1033,7 @@ def _test_airy_pattern():
     wavelength = 550e-6
     z = 25.0
     rho = _np.hypot(X,Y)
-    I = airy_pattern(wavelength, radius, z, rho, norm=0)
+    I = airy_pattern(radius, z, rho, wavelength, norm=0)
     expIntensity= _np.array([[1.37798644e-03, 8.36156468e-04, 3.56139554e-05,
                               8.36156468e-04, 1.37798644e-03],
                             [8.36156468e-04, 1.77335279e-05, 4.89330106e-02,
@@ -1018,9 +1046,9 @@ def _test_airy_pattern():
                              8.36156468e-04, 1.37798644e-03]])
     nt.assert_array_almost_equal(expIntensity, I, decimal=2)
     # check for normalization
-    I = airy_pattern(wavelength, radius, z, rho)
+    I = airy_pattern(radius, z, rho, wavelength)
     nt.assert_almost_equal(_np.max(I), 1.0, decimal=6)
-    I = airy_pattern(wavelength, radius, z, rho, norm=2)
+    I = airy_pattern(radius, z, rho, wavelength, norm=2)
     nt.assert_almost_equal(_np.sum(I), 1.0, decimal=6)
     print("test_airy_patten() is successful")
 
@@ -1059,19 +1087,19 @@ def _test_zenith_azimuth_from_dir_cos():
 
 def _test_get_alpha_beta_gamma_set():
     """Test get_alpha_beta_gamma_set() function"""
-    a, b, g = get_alpha_beta_gamma_set(0, 0, 1)
-    exp_array = _np.array((None, None, None))
-    nt.assert_array_equal(_np.array((a, b, g)), exp_array)
-    a, b, g = get_alpha_beta_gamma_set(0, 0, 1, 'alpha')
+    a, b, g = get_alpha_beta_gamma_set(None, None, 1, forceZero='alpha')
     exp_array = _np.array((0.0, 0.0, 1.0))
     nt.assert_array_almost_equal(_np.array((a, b, g)), exp_array, decimal=8)
-    a, b, g = get_alpha_beta_gamma_set(0, 0, 0.5, 'alpha')
+    a, b, g = get_alpha_beta_gamma_set(None, None, 1, forceZero='alpha')
+    exp_array = _np.array((0.0, 0.0, 1.0))
+    nt.assert_array_almost_equal(_np.array((a, b, g)), exp_array, decimal=8) 
+    a, b, g = get_alpha_beta_gamma_set(None, None, 0.5, forceZero='alpha')
     exp_array = _np.array((0.0, 0.86602540378, 0.5))
     nt.assert_array_almost_equal(_np.array((a, b, g)), exp_array, decimal=8)
-    a, b, g = get_alpha_beta_gamma_set(0, 0.0593911746139, 0.939692620786)
+    a, b, g = get_alpha_beta_gamma_set(None, 0.0593911746139, 0.939692620786)
     exp_array = _np.array((0.33682408883, 0.05939117461, 0.93969262078))
     nt.assert_array_almost_equal(_np.array((a, b, g)), exp_array, decimal=8)
-    a, b, g = get_alpha_beta_gamma_set(0.33682408883320675, 0.0593911746139,0)
+    a, b, g = get_alpha_beta_gamma_set(0.33682408883320675, 0.0593911746139, None)
     exp_array = _np.array((0.33682408883, 0.05939117461, 0.93969262078))
     nt.assert_array_almost_equal(_np.array((a, b, g)), exp_array, decimal=8)
     print("test_get_alpha_beta_gamma_set() is successful")

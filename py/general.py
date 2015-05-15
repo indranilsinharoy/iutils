@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#-------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
 # Name:          genutils.py
 # Purpose:       General (Python) Utility Functions
 #
@@ -9,12 +9,13 @@
 # Last Modified: 04/30/2015
 # Copyright:     (c) Indranil Sinharoy 2013 - 2015
 # Licence:       MIT License
-#-------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
 from __future__ import division, print_function
 import sys as _sys
 from os import listdir as _listdir, getcwd as _getcwd
 import hashlib as _hashlib
 from subprocess import call as _call
+import random as _random
 
 
 def is64bit():
@@ -175,12 +176,36 @@ def set_small_values_to_zero(tol, *values):
     >>> d
     0.0
     """
-    return [0 if abs(value) < tol else value for value in values]
+    return [0.0 if abs(value) < tol else value for value in values]
+    
+def approx_equal(x, y, tol=1e-12):
+    """compare two float values using relative difference as measure
+    
+    Parameters
+    ----------
+    x, y : floats
+        floating point values to be compared
+    tol : float
+        tolerance
+    
+    Returns
+    -------
+    rel_diff : bool
+        ``True`` if ``x`` and ``y`` are approximately equal within the tol   
+    
+    Notes
+    -----
+    1. relative difference: http://en.wikipedia.org/wiki/Relative_change_and_difference
+    3. In future, this function could be replaced by a standard library function. See
+       PEP0485 for details. https://www.python.org/dev/peps/pep-0485/
+    """
+    return abs(x - y) <= max(abs(x), abs(y)) * tol
 
 #%% TEST FUNCTIONS
 
 def _test_is64bit():
-    """For obvious reasons, this is not an automated test. i.e. it requires a visual inspection"""
+    """For obvious reasons, this is not an automated test. i.e. it requires a visual 
+    inspection"""
     print("\nTest for 32/64 bitness of Python system")
     bitness = 64 if is64bit() else 32
     print("This is %s bit system" % bitness)
@@ -190,9 +215,11 @@ def _test_remove_duplicates_in_list():
     exp_ret = [1, 2, 4, 3, 6, 5, 10, 20, 21, 8]
     ret = remove_duplicates_in_list(a)
     _nt.assert_array_equal(exp_ret, ret)
+    print("test_remove_duplicates_in_list() successful")
     
 def _test_set_small_values_to_zero():
-    """Test helper function _set_small_values_to_zero()"""
+    """Test helper function _set_small_values_to_zero()
+    """
     tol = 1e-12
     a, b, c, d = set_small_values_to_zero(tol, 1.0, 0.0, tol, 1e-13)
     assert a == 1.0
@@ -205,6 +232,17 @@ def _test_set_small_values_to_zero():
     assert c == -tol
     assert d == 0.0
     print("test_set_small_values_to_zero() successful")
+    
+def _test_approx_equal():
+    """test for function test_approx_equal()
+    """
+    a = _random.random()*100.0
+    b = a + 1e-15
+    assert approx_equal(a, b)
+    c = a + 1e-3
+    assert not approx_equal(a, c)
+    print("test_approx_equal() successful")
+    
 
 
 if __name__=="__main__":
@@ -214,3 +252,4 @@ if __name__=="__main__":
     _test_is64bit()
     _test_remove_duplicates_in_list()
     _test_set_small_values_to_zero()
+    _test_approx_equal()

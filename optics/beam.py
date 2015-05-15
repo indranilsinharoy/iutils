@@ -16,16 +16,16 @@ import numpy as _np
 
 class GaussianBeam(object):
     """Gaussian Beam (perfect TEM00 mode) class"""
-    def __init__(self, wavelen=635e-6, waistDia=1, power=None):
+    def __init__(self, waistDia=1, wavelen=635e-6, power=None):
         """
         Parameters
         ----------
-        wavelen : float, optional
-            wavelength in mm, default=635e-6 mm
         waistDia : float, optional
             waist diameter (``2*w0`` or spot size or minimum beam diameter)
             in mm, where ``w0`` is called the "waist" (waist radius) in
             Zemax
+        wavelen : float, optional
+            wavelength in mm, default=635e-6 mm
         power : float, optional
             Total power
         """
@@ -193,7 +193,7 @@ class HeNe(GaussianBeam):
 
 ## TESTS
 def _test_GaussianBeam():
-    beam = GaussianBeam(wavelen=1064e-6, waistDia=2)
+    beam = GaussianBeam(waistDia=2, wavelen=1064e-6,)
     # the following values were verified with the calculator at
     # http://www.rp-photonics.com/gaussian_beams.html
     rayl_rng_diff = abs(beam.rayleigh - 2952.62467443)

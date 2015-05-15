@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#-------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
 # Name:          signals.py
 # Purpose:       collection of signals/functions. Most of these are either
 #                not available directly from scipy.signal or scipy.special,
@@ -11,7 +11,7 @@
 # Last Modified: 12/31/2013
 # Copyright:     (c) Indranil Sinharoy 2012, 2013
 # Licence:       MIT License
-#-------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
 """Collection of signals. Most of these are either not available directly
 from scipy.signal or scipy.special or may have slightly different definition.
 """
