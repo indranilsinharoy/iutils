@@ -109,7 +109,7 @@ def rect2d(X, Y, a=1.0, b=1.0, sharp_transition=True):
     Given two vectors x and y, you can create a 2D rect as follows:
     ::
 
-        X,Y = np.meshgrid(x,y)           # create the 2D coordinates
+        X, Y = np.meshgrid(x, y)         # create the 2D coordinates
         z = rect(X/a)*rect(Y/b)          # rectangular function
 
     Examples

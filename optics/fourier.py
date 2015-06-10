@@ -104,9 +104,15 @@ def fresnel_number(r, z, wavelen=550e-6, approx=False):
        an unaberrated rotationally symmetric beam with finite extent
        [Zemax]_.
     2. From the Huygens-Fresnel principle perspective, the Fresnel number
-       represents the number of annular Fresnel zones in the aperture
+       represents the number of annular "Fresnel zones" in the aperture
        opening [Wolf2011]_, or from the center of the beam to the edge in
-       case of a propagating beam [Zemax]_.
+       case of a propagating beam [Zemax]_. Fresnel zones are the radial 
+       zones where the phase as seen from the observation point changes by π.
+    3. The Fresnel number is also used to determine if the observation point
+       is in the near or far field from the position of current propagation.
+       If Fresnel number << 1, the observation point is said to be in the
+       far-field relative to the propagation of the present location of 
+       the beam [Zemax]_. 
 
     References
     ----------
@@ -247,7 +253,7 @@ def airy_pattern(r, zxp, rho, wavelen, norm=1):
     """
     #TODO!!! (remove this warning in future)
     if r < 1e-3 :  # was possibly was for wavelength
-        _warnings.warn('API has changed. Please ensure parameter validity!')
+        _warnings.warn('\nAPI has changed. Please ensure parameter validity!\n')
     # The jinc() function used here is defined as jinc(x) = J_1(x)/x, jinc(0) = 0.5
     pattern = ((_np.pi*r**2/(wavelen*zxp))
                *2*_jinc(2*_np.pi*r*rho/(wavelen*zxp), normalize=False))**2

@@ -12,7 +12,6 @@
 #-------------------------------------------------------------------------------
 from __future__ import division, print_function
 import numpy as _np
-from scipy import optimize as _optimize
 import matplotlib.pyplot as _plt
 import matplotlib.cm as _cm
 import matplotlib.colors as _mplc
@@ -54,62 +53,6 @@ class arrow(object):
         self.twoDarrow = _plt.arrow(start[0], start[1], dx, dy, color=a_col,
                                    alpha=alpha, width=width, head_width=head_width,
                                    head_length=head_length, length_includes_head=True)
-
-def find_zero_crossings(f, a, b, func_args=(), n=100):
-    """Retun a list of zero-crossings (roots) of the function within the
-    interval (a,b)
-
-    ``Usage: find_zero_crossings(f, a, b [,func_args, n]) -> zero_crossings``
-
-    Parameters
-    ----------
-    f : object
-        function-name whose zero-crossings (roots) are to be found
-    a : float or int
-        start of the interval
-    b : float or int
-        end of the interval
-    func_args : tuple, optional
-        a tuple of arguments that are to be passed to the function
-        ``f`` in the expected order.
-    n : integer, optional
-        number of points on the real line where the function is evaluated
-        in the process of finding the sign-changing intervals that are
-        passed to the ``scipy.optimize.brentq`` function (Default==100).
-
-    Returns
-    -------
-    zero_crossings : list
-        zero crossings. If no zero-crossings are found, the returned list
-        is empty.
-
-    Examples
-    --------
-    (1) Zero crossings of a function that takes no arguments
-
-    >>> mpu.find_zero_crossings(np.cos -2*np.pi, 2*np.pi)
-    [-4.712388980, -1.57079632679, 1.57079632679, 4.712388980]
-
-    (2) Zero crossing of a function that takes one argument
-
-    >>> def func(x, a):
-    >>>     return integrate.quad(lambda t: special.j1(t)/t, 0, x)[0] - a
-    >>> mpu.find_zero_crossings(func_t2, 1e-10, 25, func_args=(1,))
-    [2.65748, 5.67254, 8.75990, 11.87224, 14.99576, 18.12516, 21.25800, 24.39301]
-    """
-    # Evaluate the function at `n` points on the real line within the interval [a,b]
-    real_line = _np.linspace(a, b, n)
-    fun_vals = [f(x, *func_args) for x in real_line]
-    sign_change_arr = [a]   # initialize the first element
-    for i in range(1, len(fun_vals)):
-        if(fun_vals[i-1]*fun_vals[i] < 0):
-            sign_change_arr.append(real_line[i])
-    zero_crossings = []     # initialize empty list
-    for j in range(1,len(sign_change_arr)):
-        zero_crossings.append(_optimize.brentq(f, sign_change_arr[j-1],
-                              sign_change_arr[j], args=func_args))
-    return zero_crossings
-
 
 def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3,
                setinvisible=False):
@@ -746,33 +689,6 @@ def _test_arrow():
     arrow(ori,v1,'c')
     _plt.show()
 
-def _test_find_zero_crossings():
-    """test find_zero_crossings function"""
-    print("\nTest for find_zero_crossings function")
-    # Zero crossing test for function with no arguments
-    def func_t1(x):
-        """Computes Integrate [j1(t)/t, {t, 0, x}] - 1"""
-        return _integrate.quad(lambda t: _special.j1(t)/t, 0, x)[0] - 1
-    zero_cross = find_zero_crossings(func_t1, 1e-10, 25)
-    exp_zc = [2.65748482456961, 5.672547403169345, 8.759901449672629, 11.87224239501442,
-              14.99576753285061, 18.12516624215325, 21.258002755273516, 24.393014762783487]
-    _nt.assert_array_almost_equal(_np.array(zero_cross), _np.array(exp_zc), decimal=5)
-    print("... find_zero_crossings OK for zero-argument function")
-    # test for function with one argument
-    def func_t2(x, a):
-        """Computes Integrate [j1(t)/t, {t, 0, x}] - a"""
-        return _integrate.quad(lambda t: _special.j1(t)/t, 0, x)[0] - a
-    zero_cross = find_zero_crossings(func_t2, 1e-10, 25, func_args=(1,))
-    _nt.assert_array_almost_equal(_np.array(zero_cross), _np.array(exp_zc), decimal=5)
-    print("... find_zero_crossings OK for one-argument function")
-    # test for function with no arguments but no zero crossings
-    def func_t3(x):
-        return x**2.0 + 1.0
-    zero_cross = find_zero_crossings(func_t3, 0, 25)
-    _nt.assert_equal(len(zero_cross),0)
-    print("... find_zero_crossings OK for empty return list")
-    print("All test for _test_find_zero_crossings() passed successfully")
-
 def _test_ImageComparator():
     curFilePath = _os.path.realpath(__file__)
     testDataPath = curFilePath.rsplit('\\', 2)[0]
@@ -812,11 +728,10 @@ if __name__ == '__main__':
     import numpy.testing as _nt
     import os as _os
     from numpy import set_printoptions
-    from scipy import integrate as _integrate, special as _special
     from scipy.misc import imread as _imread
     set_printoptions(precision=4, linewidth=85)  # for visual output in manual tests.
     # Automatic tests
-    #_test_find_zero_crossings()
+
     # Visual tests: These testing methods are meant to be manual tests which requires visual inspection.
     #_test_arrow()
     #_test_ImageComparator()
