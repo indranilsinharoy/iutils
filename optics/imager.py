@@ -14,6 +14,7 @@ from __future__ import division, print_function
 import numpy as _np
 import math as _math
 import collections as _co
+import iutils.optics.goptics as _go
 
 #----------------------------------
 # Digital sensor related functions
@@ -108,46 +109,6 @@ def lpmm2lpph(lpmm, n, pixelPitch):
 #---------------------------------------
 # Imaging functions
 #---------------------------------------
-def gaussian_lens_formula(u=None, v=None, f=None, infinity=10e20):
-    """return the third value of the Gaussian lens formula, given any two
-
-    Parameters
-    ----------
-    u : float, optional
-        object distance
-    v : float, optional
-        image distance
-    f : float, optional
-        focal length
-    infinity : float
-        numerical value to represent infinity (default=10e20)
-
-    Returns
-    -------
-    value : float
-        the third value given the other two of the Gaussian lens formula
-
-    Examples
-    --------
-    >>> gaussian_lens_formula(u=1e20, f=10)
-    10.0
-    """
-    if u:
-        if v:
-            f = (u*v)/(u+v)
-            return f
-        elif f:
-            try:
-                v = (u*f)/(u - f)
-            except ZeroDivisionError:
-                v = infinity
-            return v
-    else:
-        try:
-            u = (v*f)/(v - f)
-        except ZeroDivisionError:
-            u = infinity
-        return u
 
 def geometric_depth_of_field(focalLength, fNumber, objDist, coc, grossExpr=False):
     """Returns the geometric depth of field value
@@ -253,13 +214,13 @@ class Scheimpflug(object):
         # set the object and image distances
         if u is not None:
             self._u = u
-            self._v = gaussian_lens_formula(u=u, v=None, f=f)
+            self._v = _go.gaussian_lens_formula(u=u, v=None, f=f)
         elif v is not None:
             self._v = v
-            self._u = gaussian_lens_formula(u=None, v=v, f=f)
+            self._u = _go.gaussian_lens_formula(u=None, v=v, f=f)
         else:
             self._v = f
-            self._u = gaussian_lens_formula(u=None, v=f, f=f,
+            self._u = _go.gaussian_lens_formula(u=None, v=f, f=f,
                                             infinity=Scheimpflug.infty)
 
         # set the angles
@@ -292,7 +253,7 @@ class Scheimpflug(object):
         """sets focus, ``f``, and recomputes ``u`` and ``beta``
         """
         self._f = val
-        self._u = gaussian_lens_formula(u=None, v=self._v, f=val)
+        self._u = _go.gaussian_lens_formula(u=None, v=self._v, f=val)
         self._beta = Scheimpflug._alpha2beta(self._alpha, self._u, self._f)
 
     @property
@@ -304,7 +265,7 @@ class Scheimpflug(object):
         """sets object distance, ``u``, and recomputes ``v`` and ``alpha``
         """
         self._u = val
-        self._v = gaussian_lens_formula(u=val, v=None, f=self._f)
+        self._v = _go.gaussian_lens_formula(u=val, v=None, f=self._f)
         self._alpha = Scheimpflug._beta2alpha(self._beta, self._u, self._f)
 
     @property
@@ -316,7 +277,7 @@ class Scheimpflug(object):
         """sets image plane distance, ``v``, and recomputes ``u`` and ``beta``
         """
         self._v = val
-        self._u = gaussian_lens_formula(u=None, v=val, f=self._f)
+        self._u = _go.gaussian_lens_formula(u=None, v=val, f=self._f)
         # recalculate beta
         self._beta = Scheimpflug._alpha2beta(self._alpha, self._u, self._f )
 
@@ -427,21 +388,7 @@ class Scheimpflug(object):
         return shift(deltaZ, deltaY)
 
 
-# ###########################################
-#   TEST FUNCTIONS
-# ##########################################
-
-def _test_gaussian_lens_formula():
-    """Test gaussian_lens_formula function"""
-    v = gaussian_lens_formula(u=10e20, f=10)
-    _nt.assert_equal(v, 10.0)
-    v = gaussian_lens_formula(u=5000.0, f=100)
-    _nt.assert_almost_equal(v, 102.04081632653062, decimal=5)
-    u = gaussian_lens_formula(v=200, f=200)
-    _nt.assert_equal(u, 10e20)
-    f = gaussian_lens_formula(u=10e20, v=40)
-    _nt.assert_almost_equal(f, 40, decimal=5)
-    print("test_gaussian_lens_formula() is successful")
+#%% TEST FUNCTIONS
 
 def _test_scheimpflug():
     """Test the schimpflug camera class and methods"""
@@ -472,10 +419,10 @@ def _test_scheimpflug():
     _nt.assert_almost_equal(cam3.beta, 39.387884973)
     cam3.alpha = 5
     _nt.assert_almost_equal(cam3.beta, 53.8863395127)
+    print('test_scheimpflug() successful')
 
 if __name__ == '__main__':
     import numpy.testing as _nt
     from numpy import set_printoptions
     set_printoptions(precision=4, linewidth=85)  # for visual output in manual tests.
-    #_test_gaussian_lens_formula()
     _test_scheimpflug()
