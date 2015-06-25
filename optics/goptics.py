@@ -19,29 +19,42 @@ import math as _math
 
 #%% Thick-lens formulae
 
-def focal_length_thick_lens(r1, r2, d, n=1.5168):
-    '''returns the focal length of a thick-lens
+class ThickLensInAir(object):
+    '''Geometric computations of parameters for thick lens in air'''
 
-    Parameters
-    ---------- 
-    r1 : float
-        radius of curvature 1
-    r2 : float
-        radius of curvature 2
-    d : float
-        center thickness 
-    n : float, optional 
-        refractive index of the glass specified at the working wavelength.
-        Default is 1.5168, which is the refractive index of N-BK7 at 0.5876 µm
+    def __init__(self, r1, r2, t, n=1.5168):
+        '''Thick lens in air specified by the radii of curvatures
 
-    Returns
-    ------- 
-    f : float 
-        focal length   
-    '''
-    oneByf = (n-1)*(1/r1 - 1/r2 + (n-1)*d/(n*r1*r2))
-    return 1/oneByf
+        Parameters
+        ---------- 
+        r1 : float
+            radius of curvature 1
+        r2 : float
+            radius of curvature 2
+        d : float
+            center thickness 
+        n : float, optional 
+            refractive index of the glass specified at the working wavelength.
+            Default is 1.5168, which is the refractive index of N-BK7 at 0.5876 µm
+        '''
+        self.r1 = r1
+        self.r2 = r2
+        self.t = t
+        self.n = n 
 
+    @property
+    def focal_length(self):
+        '''focal length 
+        '''
+        r1, r2, t, n = self.r1, self.r2, self.t, self.n
+        oneByf = (n-1)*(1/r1 - 1/r2 + (n-1)*t/(n*r1*r2)) 
+        return 1/oneByf
+
+    @classmethod
+    def from_c(cls, c1, c2, t, n=1.5168):
+        '''Thick lens in air specified by the curvatures 
+        '''
+        return cls(1/c1, 1/c2, t, n)
 
 def gaussian_lens_formula(u=None, v=None, f=None, infinity=10e20):
     """return the third value of the Gaussian lens formula, given any two
@@ -87,12 +100,14 @@ def gaussian_lens_formula(u=None, v=None, f=None, infinity=10e20):
 
 #%% TEST FUNCTIONS
 
-def _test_focal_length_thick_lens():
-    '''test the funciton focal_length_thick_lens()
+def _test_ThickLensInAir():
+    '''test the class ThickLensInAir()
     '''
-    f = focal_length_thick_lens(r1=20.24, r2=-20.24, d=2.5) # edmund-optics Stock No. #63-537
-    _nt.assert_almost_equal(20.0029519, f)
-    print("test_focal_length_thick_lens() is successful") 
+    lens = ThickLensInAir(r1=20.24, r2=-20.24, t=2.5) # edmund-optics Stock No. #63-537
+    _nt.assert_almost_equal(20.0029519, lens.focal_length)
+    lens2 = ThickLensInAir.from_c(c1=1/20.24, c2=-1/20.24, t=2.5)
+    _nt.assert_almost_equal(20.0029519, lens2.focal_length)
+    print("test_ThickLensInAir() class is successful") 
 
 
 def _test_gaussian_lens_formula():
@@ -112,5 +127,5 @@ if __name__ == '__main__':
     from numpy import set_printoptions
     set_printoptions(precision=4, linewidth=85)  # for visual output in manual tests.
     # test functions
-    _test_focal_length_thick_lens()
+    _test_ThickLensInAir()
     _test_gaussian_lens_formula()

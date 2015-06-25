@@ -6,8 +6,8 @@
 # Author:        Indranil Sinharoy
 #
 # Created:       06/19/2014
-# Last Modified: 06/20/2014
-# Copyright:     (c) Indranil Sinharoy, 2014
+# Last Modified: 06/24/2015
+# Copyright:     (c) Indranil Sinharoy, 2014, 2015
 # Licence:       MIT License
 #-------------------------------------------------------------------------------
 from __future__ import division, print_function
@@ -16,7 +16,7 @@ import numpy as _np
 
 class GaussianBeam(object):
     """Gaussian Beam (perfect TEM00 mode) class"""
-    def __init__(self, waistDia=1, wavelen=635e-6, power=None):
+    def __init__(self, waistDia=1, wavelen=635e-6, power=1):
         """
         Parameters
         ----------
@@ -27,67 +27,55 @@ class GaussianBeam(object):
         wavelen : float, optional
             wavelength in mm, default=635e-6 mm
         power : float, optional
-            Total power
+            Power in milli-watts
         """
-        self._wavelen = wavelen
-        self._waistDia = waistDia
-        parameters = _calculate_parameters(waistDia, wavelen)
-        self._waistRad, self._rayl, self._div = parameters
-        self._power = power  # power in milli Watts
+        self.wavelen = wavelen
+        self.waistDia = waistDia
+        self.power = power          # power in milli Watts
 
     @property
     def w0(self):
         """waist radius"""
-        return self._waistRad
+        return self.waistDia/2
 
     @property
     def waistDiameter(self):
-        return self._waistDia
+        return self.waistDia
 
     @waistDiameter.setter
     def waistDiameter(self, value):
-        self._waistDia = value
-        parameters = _calculate_parameters(value, self._wavelen)
-        self._waistRad, self._rayl, self._div = parameters
-
-    @property
-    def power(self):
-        return self._power
-
-    @power.setter
-    def power(self, value):
-        self._power = value
+        self.waistDia = value
 
     @property
     def rayleigh(self):
         """rayleigh range in mm
         """
-        return self._rayl
+        return (_math.pi*self.w0**2)/self.wavelen
 
     @property
     def divergence(self):
         """far-field beam divergence (half-angle) in radians
         """
-        return self._div
+        return _math.atan(self.w0/self.rayleigh)
 
     @property
     def divergenceInDeg(self):
         """far-field beam divergence (half angle) in degrees
         """
-        return self._div*180/_math.pi
+        return self.divergence*180/_math.pi
 
     @property
     def dof(self):
         """depth of field or confocal parameter
         """
-        return 2*self._rayl
+        return 2*self.rayleigh
 
     @property
     def bpp(self):
         """beam parameter product (BPP) in mm mrad.
         It is a quality measure -- higher the BPP, lower the quality
         """
-        return self._waistRad*self._div*1000
+        return self.w0 * self.divergence * 1000
 
     def get_beam_diameter(self, z):
         """beam diameter defined by `1/e^2` intensity at a distance ``z``
@@ -105,7 +93,7 @@ class GaussianBeam(object):
             the diameter, in mm, of the beam at a distance ``z`` from the
             waist
         """
-        return 2*self._waistRad*_math.sqrt(1 + (z/self._rayl)**2)
+        return 2*self.w0*_math.sqrt(1 + (z/self.rayleigh)**2)
 
     def get_phase_roc(self, z):
         """beam's phase radius of curvature at a distance of ``z`` mm from
@@ -123,7 +111,7 @@ class GaussianBeam(object):
             the waist
         """
         try:
-            phaseRoc = z*(1 + (self._rayl/z)**2)
+            phaseRoc = z*(1 + (self.rayleigh/z)**2)
         except ZeroDivisionError:
             phaseRoc = _np.inf
         return phaseRoc
@@ -141,7 +129,7 @@ class GaussianBeam(object):
         gouy_shift : float
             the gouy shift in phase at a distance z mm from the waist
         """
-        return _math.atan2(z/self._rayl)
+        return _math.atan2(z/self.rayleigh)
 
     def get_intensity(self, rho=0, z=0):
         """beam intensity
@@ -162,19 +150,10 @@ class GaussianBeam(object):
         -----
         The total optical power needs to be defined
         """
-        w_z = self._get_beam_diameter(z)/2
-        p = self._power
-        if p:
-            return (2*p/_math.pi*w_z**2)*_math.exp(-2*rho**2 / w_z**2)
+        w_z = self.w0*_np.sqrt(1 + (z/self.rayleigh)**2 )
+        return (2*self.power/_math.pi*w_z**2)*_math.exp(-2*rho**2 / w_z**2)
 
 
-# Helper functions
-
-def _calculate_parameters(waistDia, wavelen):
-    waist_rad = waistDia/2.0
-    rayl = (_math.pi*waist_rad**2)/wavelen
-    div = _math.atan(waist_rad/rayl)
-    return waist_rad, rayl, div
 
 class HeNe(GaussianBeam):
     """Helium-Neon (HeNe) Laser"""
@@ -207,6 +186,7 @@ def _test_GaussianBeam():
     assert proc_diff < 1e-5 # phase ROC @ 1 m
     dof_diff = abs(beam.dof - 5905.24934885)
     assert dof_diff < 1e-5
+    print('test_GaussianBeam Class successful')
 
 def _test_HeNe():
     heNe = HeNe(0.1, 1)
