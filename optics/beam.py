@@ -6,51 +6,72 @@
 # Author:        Indranil Sinharoy
 #
 # Created:       06/19/2014
-# Last Modified: 06/24/2015
+# Last Modified: 06/28/2015
 # Copyright:     (c) Indranil Sinharoy, 2014, 2015
 # Licence:       MIT License
 #-------------------------------------------------------------------------------
 from __future__ import division, print_function
 import math as _math
 import numpy as _np
+from iutils.py.general import approx_equal as _approx_equal
 
 class GaussianBeam(object):
     """Gaussian Beam (perfect TEM00 mode) class"""
-    def __init__(self, waistDia=1, wavelen=635e-6, power=1):
+    def __init__(self, waistDiameter=1, wavelength=635e-6, power=1):
         """
         Parameters
         ----------
-        waistDia : float, optional
+        waistDiameter : float, optional
             waist diameter (``2*w0`` or spot size or minimum beam diameter)
-            in mm, where ``w0`` is called the "waist" (waist radius) in
-            Zemax
-        wavelen : float, optional
+            in mm, where ``w0`` is called the "waist" (waist radius) in Zemax
+        wavelength : float, optional
             wavelength in mm, default=635e-6 mm
         power : float, optional
-            Power in milli-watts
+            power in milli-watts
         """
-        self.wavelen = wavelen
-        self.waistDia = waistDia
-        self.power = power          # power in milli Watts
+        # protected variables
+        self._wavelen = None
+        self._waistDia = None
+        self._power = None
+
+        self.wavelength = wavelength
+        self.waistDiameter = waistDiameter
+        self.power = power                  # power in milli Watts
+
+    @property
+    def wavelength(self):
+        return self._wavelen
+
+    @wavelength.setter
+    def wavelength(self, value):
+        self._wavelen = value    
+
+    @property
+    def waistDiameter(self):
+        return self._waistDia
+
+    @waistDiameter.setter
+    def waistDiameter(self, value):
+        self._waistDia = value
+
+    @property
+    def power(self):
+        return self._power
+    
+    @power.setter
+    def power(self, value):
+        self._power = value
 
     @property
     def w0(self):
         """waist radius"""
-        return self.waistDia/2
-
-    @property
-    def waistDiameter(self):
-        return self.waistDia
-
-    @waistDiameter.setter
-    def waistDiameter(self, value):
-        self.waistDia = value
+        return self._waistDia/2
 
     @property
     def rayleigh(self):
         """rayleigh range in mm
         """
-        return (_math.pi*self.w0**2)/self.wavelen
+        return (_math.pi*self.w0**2)/self._wavelen
 
     @property
     def divergence(self):
@@ -150,49 +171,61 @@ class GaussianBeam(object):
         -----
         The total optical power needs to be defined
         """
-        w_z = self.w0*_np.sqrt(1 + (z/self.rayleigh)**2 )
-        return (2*self.power/_math.pi*w_z**2)*_math.exp(-2*rho**2 / w_z**2)
+        w_z = self.get_beam_diameter(z)/2
+        return (2*self._power/_math.pi*w_z**2)*_math.exp(-2*rho**2 / w_z**2)
 
 
 
 class HeNe(GaussianBeam):
     """Helium-Neon (HeNe) Laser"""
-    def __init__(self, waistDia, power=None):
+    def __init__(self, waistDiameter, power=None):
         """HeNe laser
 
         Parameters
         ----------
-        waistDia : float, optional
-            waist diameter (2*W_0 or spot size or minimum beam diameter)
-            in mm
+        waistDiameter : float
+            waist diameter (2*W_0 or spot size or minimum beam diameter) in mm
         power : float, optional
-            Total power
+            total power
         """
-        super(HeNe, self).__init__(632.8e-6, waistDia, power)
+        super(HeNe, self).__init__(waistDiameter, 632.8e-6, power)
 
-## TESTS
+
+#%% TESTS
 def _test_GaussianBeam():
-    beam = GaussianBeam(waistDia=2, wavelen=1064e-6,)
+    beam = GaussianBeam(waistDiameter=2, wavelength=1064e-6,)
     # the following values were verified with the calculator at
     # http://www.rp-photonics.com/gaussian_beams.html
-    rayl_rng_diff = abs(beam.rayleigh - 2952.62467443)
-    assert rayl_rng_diff < 1e-5, 'Value: {}'.format(rayl_rng_diff)
-    bdiv_diff = abs(beam.divergence - 0.00033868170595)
-    assert bdiv_diff < 1e-5
-    bpp_diff = abs(beam.bpp - 0.33868170595)
-    assert bpp_diff < 1e-5
-    assert beam.get_phase_roc(0) == _np.inf # phase ROC @ waist
-    proc_diff = abs(beam.get_phase_roc(1000) - 9717.99246803)
-    assert proc_diff < 1e-5 # phase ROC @ 1 m
-    dof_diff = abs(beam.dof - 5905.24934885)
-    assert dof_diff < 1e-5
+    assert _approx_equal(beam.rayleigh, 2.95262467443e3, 1e-10)
+    assert _approx_equal(beam.divergence, 0.00033868170595, 1e-10)
+    assert _approx_equal(beam.bpp, 0.33868170595, 1e-10)
+    assert _approx_equal(beam.get_phase_roc(1000), 9.71799246803e3, 1e-10) # phase ROC @ 1 m
+    assert _approx_equal(beam.dof, 5.9052493489e3, 1e-10)
+    # Test change of parameters (values verified with Zemax)
+    gauss = GaussianBeam(2, 550e-6)
+    assert gauss.wavelength == 550e-6
+    assert gauss.w0 == 1.0
+    assert _approx_equal(gauss.divergence, 1.75070435612e-4, 1e-10)
+    assert _approx_equal(gauss.rayleigh, 5.71198664289e3, 1e-10)
+    assert _approx_equal(gauss.get_phase_roc(1000), 3.36267914086e4, 1e-10) # phase ROC @ 1 m
+    beamDiam1m = gauss.get_beam_diameter(1000)
+    assert _approx_equal(beamDiam1m, 2.0304183392, 1e-10)
+    gauss.waistDiameter = 0.2 # change beam parameter using property
+    assert gauss.w0 == 0.1
+    assert _approx_equal(gauss.divergence, 1.750702585398e-3, 1e-10)
+    beamDiam1m = gauss.get_beam_diameter(1000)
+    assert _approx_equal(beamDiam1m, 3.50711608315, 1e-10)
+    # test changing wavelength using properties
+    gauss.wavelength = 500e-6
+    assert _approx_equal(gauss.divergence, 1.59154808711e-3, 1e-10)
     print('test_GaussianBeam Class successful')
 
 def _test_HeNe():
     heNe = HeNe(0.1, 1)
-    print("HeNe Laser, divergence = ", heNe.divergence)
+    assert _approx_equal(heNe.divergence, 4.02850812668e-3, 1e-10)
     heNe2 = HeNe(0.48, 0.8)
-    print("HeNe 2 Laser, divergence = ", heNe2.divergence)
+    assert _approx_equal(heNe2.divergence, 8.39276869513e-4, 1e-10)
+    print('test_HeNe Class successful')
 
 if __name__ == "__main__":
     #import numpy.testing as nt
