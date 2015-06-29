@@ -6,7 +6,7 @@
 # Author:        Indranil Sinharoy
 #
 # Created:       06/24/2015
-# Last Modified: 
+# Last Modified: 06/28/2015
 # Copyright:     (c) Indranil Sinharoy 2015
 # License:       MIT License
 #-------------------------------------------------------------------------------
@@ -27,10 +27,10 @@ class ThickLensInAir(object):
 
         Parameters
         ---------- 
-        r1 : float
-            radius of curvature 1
-        r2 : float
-            radius of curvature 2
+        r1 : float or np.inf
+            radius of curvature of first surface
+        r2 : float or np.inf
+            radius of curvature of second surface
         d : float
             center thickness 
         n : float, optional 
@@ -54,7 +54,9 @@ class ThickLensInAir(object):
     def from_c(cls, c1, c2, t, n=1.5168):
         '''Thick lens in air specified by the curvatures 
         '''
-        return cls(1/c1, 1/c2, t, n)
+        r1 = 1/c1 if c1 else _np.inf
+        r2 = 1/c2 if c2 else _np.inf     
+        return cls(r1, r2, t, n)
 
 def gaussian_lens_formula(u=None, v=None, f=None, infinity=10e20):
     """return the third value of the Gaussian lens formula, given any two
