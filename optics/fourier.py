@@ -11,11 +11,12 @@
 # License:       MIT License
 #-----------------------------------------------------------------------------------------
 """foptics module contains some useful functions for Fourier Optics based
-calculations.
+   calculations.
 """
 from __future__ import division, print_function
 import math as _math
 import numpy as _np
+from iutils.py.general import approx_equal
 from iutils.signal.signals import jinc as _jinc
 import iutils.optics.imager as _imgr
 import warnings as _warnings
@@ -54,13 +55,15 @@ def _is_dir_cos_valid(alpha, beta, gamma, tol=1e-12):
     """test the validity of direction cosines
     returns ``True`` if valid, ``False`` if not
     """
-    absdiff = abs(alpha**2 + beta**2 + gamma**2 - 1)
-    if absdiff > tol:
-        print('The sum of squares of the direction cosines is not approximately '
-              'equal to 1. The absolute difference is {:2.4E}'.format(absdiff))
-        return False
-    else:
+    squSum = alpha**2 + beta**2 + gamma**2
+    if approx_equal(squSum, 1.0, tol):
         return True
+    else:
+        absdiff = abs(squSum - 1.0)
+        print('The sum of squares of the direction cosines is not approximately '
+              'equal to 1.0 The absolute difference of the sum of squares from '
+              '1.0 is {:2.10E} (must be 0.0)'.format(absdiff))
+        return False
         
 def _first(iterable, what, test='equality'):
     """return the index of the first occurance of ``what`` in ``iterable``
@@ -819,7 +822,7 @@ def spatial_freq_from_dir_cos(gamma=None, alpha=None, beta=None, wavelen=550e-6,
 
 def spatial_freq_from_angles(theta_z, theta_x, theta_y, wavelen=550e-6, atype='deg', tol=1e-12):
     """returns the spatial frequencies associated with a plane wave whose wave vector
-    makes angle theta_z w.r.t z-axis, theta_x w.r.t. x-axis, & theta_y w.r.t. y-axis
+    makes angle `theta_z` w.r.t z-axis, `theta_x` w.r.t. x-axis, & `theta_y` w.r.t. y-axis
 
     Parameters
     ----------

@@ -17,7 +17,7 @@ import matplotlib.cm as _cm
 import matplotlib.colors as _mplc
 import matplotlib.colorbar as _mplcbar
 from matplotlib.widgets import  RectangleSelector as _RectangleSelector
-from iutils.plotutils.colormaputils import get_colormap as _get_colormap
+from iutils.plot.colormap import get_colormap as _get_colormap
 cplotHSVcm = _get_colormap('cplothsv', N=256, sat=0.7, linearPhaseMap=False)
 
 class arrow(object):
@@ -733,6 +733,6 @@ if __name__ == '__main__':
     # Automatic tests
 
     # Visual tests: These testing methods are meant to be manual tests which requires visual inspection.
-    #_test_arrow()
-    #_test_ImageComparator()
+    _test_arrow()
+    _test_ImageComparator()
     _test_plot_complex_function()
