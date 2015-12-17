@@ -138,8 +138,7 @@ def rotMat2D(angle, atype='r'):
     return r
 
 def rotMat3D(axis, angle, atype='r', tol=1e-12):
-    """Return the rotation matrix for 3D rotation by angle ``angle`` and about an 
-    arbitrary axis ``axis``.
+    """Return 3D rotation matrix for about an arbitrary axis by an angle.
 
     Parameters
     ----------
@@ -160,8 +159,7 @@ def rotMat3D(axis, angle, atype='r', tol=1e-12):
 
     Notes
     -----
-    The 3D rotation matrix is computed using the Rodrigues' rotation formula which has 
-    the following form [1]_, [2]_:
+    the rotation matrix is computed using the Rodrigues' rotation formula [1]_, [2]_:
 
     .. math::
 
