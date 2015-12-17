@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #-------------------------------------------------------------------------------
-# Name:          colormaputils.py
+# Name:          colormap.py
 # Purpose:       collection of utility functions related to colormaps.
 #
 # Author:        Indranil Sinharoy

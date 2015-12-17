@@ -296,14 +296,17 @@ def format_stem_plot(mline, stlines, bline, mecol='#222222', mfcol='#F52080',
     bline.set_color(bcol)
 
 def imshow(image, bGray=False, fig=None, axes=None, subplot=None, interpol=None,
-           xlabel=None, ylabel=None):
+           xlabel=None, ylabel=None, figsize=None):
     """Rudimentary image display routine, for quick display of images without
-    the axes
+    the spines and ticks 
     """
     if (subplot == None):
         subplot = int(111)
     if(fig==None):
-        fig = _plt.figure()
+        if figsize and isinstance(figsize, tuple) and len(figsize)==2:
+            fig = _plt.figure(figsize=figsize)
+        else:
+            fig = _plt.figure()
         axes = fig.add_subplot(subplot)
     elif(axes==None):
         axes = fig.add_subplot(subplot)

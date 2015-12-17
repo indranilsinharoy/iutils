@@ -6,7 +6,7 @@
 # Author:        Indranil Sinharoy
 #
 # Created:       07/25/2013
-# Last Modified: 04/30/2015
+# Last Modified: 12/04/2015
 # Copyright:     (c) Indranil Sinharoy 2013 - 2015
 # Licence:       MIT License
 #-----------------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ import random as _random
 
 macheps = _sys.float_info.epsilon  # machine epsilon
 
-
+#%% System utilities
 def is64bit():
     """Returns True if 64 bit, False if not (i.e. if 32 bit Python environment)
 
@@ -41,7 +41,7 @@ def is64bit():
     # the best way to determine the "bitness" of the system.
     return _sys.maxsize > 2**31 - 1
 
-
+#%% misc. utilities
 def find_zero_crossings(f, a, b, func_args=(), n=100):
     """Retun a list of zero-crossings (roots) of the function within the
     interval (a,b)
@@ -178,6 +178,7 @@ def nbconvert():
     print("\nDONE!")
     raw_input("Press ENTER to close the appliation ...")
 
+#%% utilities on sequences like lists and tuples
 def remove_duplicates_in_list(seq):
     """Removes and returns a new list with duplicate elements removed and the
     order of elements in the sequence is preserved
@@ -202,8 +203,23 @@ def remove_duplicates_in_list(seq):
     seen_add = seen.add
     newSeq = [x for x in seq if x not in seen and not seen_add(x)]
     return newSeq
+    
+def count_None(seq):
+    """Returns the number of `None` in a list or tuple
+    
+    Parameters
+    ----------
+    seq : list or tuple
+        input sequence
 
+    Returns
+    -------
+    num : integer
+        number of `None` in the sequence
+    """
+    return sum(i is None for i in seq)
 
+#%% Approximation utilities
 def set_small_values_to_zero(tol, *values):
     """helper function to set infinitesimally small values to zero
     
@@ -261,13 +277,11 @@ def approx_equal(x, y, tol=macheps):
 def _test_is64bit():
     """For obvious reasons, this is not an automated test. i.e. it requires a visual 
     inspection"""
-    print("\nTest for 32/64 bitness of Python system")
     bitness = 64 if is64bit() else 32
     print("This is %s bit system" % bitness)
+    print("test_is64bit() successful.\n")
     
 def _test_find_zero_crossings():
-    """test find_zero_crossings function"""
-    print("\nTest for find_zero_crossings() function")
     # Zero crossing test for function with no arguments
     def func_t1(x):
         """Computes Integrate [j1(t)/t, {t, 0, x}] - 1"""
@@ -290,20 +304,23 @@ def _test_find_zero_crossings():
     zero_cross = find_zero_crossings(func_t3, 0, 25)
     _nt.assert_equal(len(zero_cross),0)
     print("... find_zero_crossings OK for empty return list")
-    print("All test for _test_find_zero_crossings() passed successfully")
+    print("test_find_zero_crossings() successful.\n")
 
 def _test_remove_duplicates_in_list():
-    print("\nTest for remove_duplicates_in_list() function")
     a = [1, 2, 4, 1, 2, 3, 6, 2, 2, 5, 5, 10, 3, 20, 21, 20, 8, 6]
     exp_ret = [1, 2, 4, 3, 6, 5, 10, 20, 21, 8]
     ret = remove_duplicates_in_list(a)
     _nt.assert_array_equal(exp_ret, ret)
-    print("test_remove_duplicates_in_list() successful")
+    print("test_remove_duplicates_in_list() successful.\n")
+    
+def _test_count_None():
+    a = [None, 1, 3, None]
+    b = [None, None, None, None]
+    assert count_None(a) == 2
+    assert count_None(b) == 4
+    print("test_count_None() successful.\n")
     
 def _test_set_small_values_to_zero():
-    """Test helper function _set_small_values_to_zero()
-    """
-    print("\nTest for set_small_values_to_zero() function")
     tol = 1e-12
     a, b, c, d = set_small_values_to_zero(tol, 1.0, 0.0, tol, 1e-13)
     assert a == 1.0
@@ -315,12 +332,9 @@ def _test_set_small_values_to_zero():
     assert b == -0.0
     assert c == -tol
     assert d == 0.0
-    print("test_set_small_values_to_zero() successful")
+    print("test_set_small_values_to_zero() successful.\n")
     
 def _test_approx_equal():
-    """test for function test_approx_equal()
-    """
-    print("\nTest for approx_equal() function")
     a = _random.random()*100.0
     b = a + 1e-16
     assert approx_equal(a, b), \
@@ -328,15 +342,17 @@ def _test_approx_equal():
     c = a + 1e-7
     assert not approx_equal(a, c), \
     '\na = {}, c = {}, |a-c| = {}'.format(a, c, abs(a-c))
-    print("test_approx_equal() successful")
+    print("test_approx_equal() successful.\n")
     
 if __name__=="__main__":
     import numpy.testing as _nt
     from scipy import integrate as _integrate, special as _special
     from numpy import set_printoptions
     set_printoptions(precision=4, linewidth=85)  # for visual output in manual tests.
+    print("Running module level unit test functions:\n")
     _test_is64bit()
     _test_find_zero_crossings()
     _test_remove_duplicates_in_list()
+    _test_count_None()
     _test_set_small_values_to_zero()
     _test_approx_equal()
