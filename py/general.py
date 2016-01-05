@@ -6,7 +6,7 @@
 # Author:        Indranil Sinharoy
 #
 # Created:       07/25/2013
-# Last Modified: 12/04/2015
+# Last Modified: 12/20/2015
 # Copyright:     (c) Indranil Sinharoy 2013 - 2015
 # Licence:       MIT License
 #-----------------------------------------------------------------------------------------
@@ -14,10 +14,12 @@ from __future__ import division, print_function
 import sys as _sys
 import numpy as _np
 from scipy import optimize as _optimize
-from os import listdir as _listdir, getcwd as _getcwd
+from os import listdir as _listdir, getcwd as _getcwd, path as _path, makedirs as _makedirs
 import hashlib as _hashlib
 from subprocess import call as _call
 import random as _random
+import Tkinter as _Tkinter
+import Tkconstants as _Tkconst
 
 macheps = _sys.float_info.epsilon  # machine epsilon
 
@@ -271,6 +273,57 @@ def approx_equal(x, y, tol=macheps):
        PEP0485 for details. https://www.python.org/dev/peps/pep-0485/
     """
     return abs(x - y) <= max(abs(x), abs(y)) * tol
+
+#%% File system utilities
+
+def get_directory_path(dirbranch=None):
+    '''returns absolute path of the leaf directory 
+    
+    If directory branch is not present, the function creates the directories under 
+    current file directory
+    
+    Parameters
+    ----------
+    dirbranch : tuple or None
+        tuple of strings representing the directory branch. If `None`
+        the current directory is returned
+        
+    Returns
+    -------
+    dirpath : string
+        absolute path to the directory
+    
+    Example
+    -------
+    >>> get_directory_path(['data', 'spots'])
+    C:\PROGRAMSANDEXPERIMENTS\ZEMAX\PROJECTS\2014_Speckle\data\spots
+    
+    '''
+    wdir = _path.dirname(_path.realpath(__file__))
+    if dirbranch:
+        dirpath = _path.join(wdir, *dirbranch)
+        if not _path.exists(dirpath):
+            _makedirs(dirpath)
+        return dirpath
+    else:
+        return wdir
+
+
+#%% Tikinter utilities
+def show_message_box(header='', message=''):
+    '''simple message box to display status/messages
+    '''
+    tk = _Tkinter.Tk()
+    frame = _Tkinter.Frame(tk, width=20, height=20, borderwidth=10)
+    frame.pack(fill=_Tkconst.BOTH, expand=1)
+    header = header.join('\n\n')
+    hdrlabel = _Tkinter.Label(frame, text=header, fg='red')
+    hdrlabel.pack(fill=_Tkconst.X, expand=1) 
+    msglabel = _Tkinter.Label(frame, text=message)
+    msglabel.pack(fill=_Tkconst.X, expand=1)
+    button = _Tkinter.Button(frame, text='DONE', command=tk.destroy)
+    button.pack(side=_Tkconst.BOTTOM)
+    tk.mainloop()
 
 #%% TEST FUNCTIONS
 
