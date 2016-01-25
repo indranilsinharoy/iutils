@@ -15,7 +15,7 @@ from __future__ import print_function, division
 import os as _os
 from PIL import Image as _Image
 import numpy as _np
-import iutils.plotutils.mplutils as _mpu
+import iutils.plot.mplutils as _mpu
 
 def cv2mpl(im):
     """Convert color image (numpy array) created using OpenCV's ``imread``
@@ -49,7 +49,7 @@ def get_imlist(filePath, itype='jpeg'):
         full path name of the directory to be searched
     itype : string, optional
         type of images to be searched, for example -- 'jpeg', 'tiff', 'png',
-        'dng', 'bmp'
+        'dng', 'bmp' (without the dot(.))
 
     Returns
     -------
@@ -89,6 +89,11 @@ def imresize(image, size, rsfilter='ANTIALIAS'):
         'NEAREST' for nearest neighbour, 'BILINEAR' for linear interpolation
         in a 2x2 environment, 'BICUBIC' for cubic spline interpolation in a
         4x4 environment, or 'ANTIALIAS' for a high-quality downsampling filter.
+
+    Returns
+    ------- 
+    rimg : ndarray 
+        resized image
     """
     pil_im = _Image.fromarray(_np.uint8(image))
     pilfilter = {'NEAREST':_Image.NEAREST, 'BILINEAR':_Image.BILINEAR,
