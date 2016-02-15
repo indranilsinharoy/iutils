@@ -295,8 +295,8 @@ def format_stem_plot(mline, stlines, bline, mecol='#222222', mfcol='#F52080',
     bline.set_linewidth(blw)
     bline.set_color(bcol)
 
-def imshow(image, bGray=False, fig=None, axes=None, subplot=None, interpol=None,
-           xlabel=None, ylabel=None, figsize=None):
+def imshow(image, fig=None, axes=None, subplot=None, interpol=None,
+           xlabel=None, ylabel=None, figsize=None, cmap=None):
     """Rudimentary image display routine, for quick display of images without
     the spines and ticks 
     """
@@ -310,11 +310,14 @@ def imshow(image, bGray=False, fig=None, axes=None, subplot=None, interpol=None,
         axes = fig.add_subplot(subplot)
     elif(axes==None):
         axes = fig.add_subplot(subplot)
-    if(bGray==True):
-        _plt.gray()
-        # print '\ngray'
+    
     # plot the image
-    imPtHandle = _plt.imshow(image, _cm.gray, interpolation=interpol)
+    if len(image.shape) > 2:
+        imPtHandle = _plt.imshow(image, interpolation=interpol)
+    else:
+        cmap = cmap if cmap is not None else _cm.gray
+        imPtHandle = _plt.imshow(image, cmap=cmap, interpolation=interpol)
+        
     # get the image height and width to set the axis limits
     try:
         pix_height, pix_width = image.shape

@@ -98,7 +98,7 @@ def imresize(image, size, rsfilter='ANTIALIAS'):
     pil_im = _Image.fromarray(_np.uint8(image))
     pilfilter = {'NEAREST':_Image.NEAREST, 'BILINEAR':_Image.BILINEAR,
                  'BICUBIC':_Image.BICUBIC, 'ANTIALIAS':_Image.ANTIALIAS}
-    return _np.array(pil_im.resize(size, pilfilter['rsfilter']))
+    return _np.array(pil_im.resize(size, pilfilter[rsfilter]))
 
 
 def histeq(image, nbr_bins=256):
@@ -157,9 +157,14 @@ def compute_average(imlist):
     return _np.array(averageim,'uint8')
 
 
-def imshow(image, bGray=False, fig=None, axes=None, subplot=None, interpol=None,
-           xlabel=None, ylabel=None):
+def imshow(image, fig=None, axes=None, subplot=None, interpol=None,
+           xlabel=None, ylabel=None, figsize=None, cmap=None):
     """Rudimentary image display routine, for quick display of images without
     the axes
+
+    Returns
+    ------- 
+    imPtHandle, fig, axes
     """
-    return _mpu.imshow(image, bGray, fig, axes, subplot, interpol, xlabel, ylabel)
+    return _mpu.imshow(image,fig, axes, subplot, interpol, xlabel, ylabel, figsize, cmap)
+
