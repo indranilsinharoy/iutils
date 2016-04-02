@@ -383,7 +383,7 @@ def geometric_depth_of_field(focalLength, fNumber, objDist, coc, grossExpr=False
 
     Notes
     -----
-    This function is implemented in the module ``iutils.opticsutils.imager``
+    This function is implemented in the module ``iutils.optic.imager``
     """
     gdof = _imgr.geometric_depth_of_field(focalLength, fNumber, objDist, coc,
                                           grossExpr)
