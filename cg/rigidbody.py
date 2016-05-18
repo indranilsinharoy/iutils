@@ -210,8 +210,74 @@ def rot2(theta, deg=True):
     atype = 'd' if deg else 'r'
     return _np.asarray(rotMat2D(angle=theta, atype=atype))
     
-def rot3():
-    pass
+def rotX(theta, deg=True):
+    """returns 3D matrix :math:`R \in SO(3)` for rotating a vector about the x-axis
+
+    Parameters
+    ----------
+    theta : float
+        the angle of rotation about x-axis 
+    deg : bool
+        ``True`` = degree (default), ``False`` = radians
+
+    Returns
+    -------
+    r : ndarray
+        the rotation matrix
+        
+    Notes
+    -----
+    Use `rotMat3D()` for rotation about a specific axis using axis angle formula
+    """
+    axis = (1, 0, 0)
+    angle = _np.deg2rad(theta) if deg else theta
+    return rotMat3D(axis, angle)
+    
+def rotY(theta, deg=True):
+    """returns 3D matrix :math:`R \in SO(3)` for rotating a vector about the y-axis
+
+    Parameters
+    ----------
+    theta : float
+        the angle of rotation about y-axis 
+    deg : bool
+        ``True`` = degree (default), ``False`` = radians
+
+    Returns
+    -------
+    r : ndarray
+        the rotation matrix
+        
+    Notes
+    -----
+    Use `rotMat3D()` for rotation about a specific axis using axis angle formula
+    """
+    axis = (0, 1, 0)
+    angle = _np.deg2rad(theta) if deg else theta
+    return rotMat3D(axis, angle)
+    
+def rotZ(theta, deg=True):
+    """returns 3D matrix :math:`R \in SO(3)` for rotating a vector about the z-axis
+
+    Parameters
+    ----------
+    theta : float
+        the angle of rotation about x-axis 
+    deg : bool
+        ``True`` = degree (default), ``False`` = radians
+
+    Returns
+    -------
+    r : ndarray
+        the rotation matrix
+        
+    Notes
+    -----
+    Use `rotMat3D()` for rotation about a specific axis using axis angle formula
+    """
+    axis = (0, 0, 1)
+    angle = _np.deg2rad(theta) if deg else theta
+    return rotMat3D(axis, angle)
 
 
 def se2(x, y, theta=0, deg=True):
@@ -323,10 +389,32 @@ def _test_rotMat3D():
     print("test rotMat3D() successful")
 
 def _test_rot2():
-    pass
+    theta = 15.0    
+    r1 = rot2(theta)
+    r2 = rot2(_np.deg2rad(theta), deg=False)    
+    _nt.assert_array_almost_equal(r1, r2)
+    print("test rot2() successful")
 
-def _test_rot3():
-    pass
+def _test_rotX():
+    theta = 15.0
+    r1 = rotX(theta)
+    r2 = rotX(_np.deg2rad(theta), deg=False)
+    _nt.assert_array_almost_equal(r1, r2)
+    print("test rotX() successful")   
+    
+def _test_rotY():
+    theta = 15.0
+    r1 = rotY(theta)
+    r2 = rotY(_np.deg2rad(theta), deg=False)
+    _nt.assert_array_almost_equal(r1, r2)
+    print("test rotY() successful")
+    
+def _test_rotZ():
+    theta = 15.0
+    r1 = rotZ(theta)
+    r2 = rotZ(_np.deg2rad(theta), deg=False)
+    _nt.assert_array_almost_equal(r1, r2)
+    print("test rotZ() successful")
 
 def _test_se2():
     T1 = se2(1, 2, 30)
@@ -347,5 +435,7 @@ if __name__ == '__main__':
     _test_rotMat2D()
     _test_rotMat3D()
     _test_rot2()
-    _test_rot3()
+    _test_rotX()
+    _test_rotY()
+    _test_rotZ()
     _test_se2()   
