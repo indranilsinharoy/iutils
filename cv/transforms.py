@@ -152,6 +152,11 @@ def get_homography2D(fp, tp, method='DLT', normbyh9=True):
     ----------
     1. Multi-view Geometry in Computer Vision, Richard Hartley and Andrew
        Zisserman
+
+    Notes
+    -----
+    The opencv function `findHomography()` provides few `methods` to compute 
+    homography, such as RANSAC, etc.
        
     See Also
     --------

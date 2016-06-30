@@ -58,16 +58,16 @@ class arrow(object):
         x_stick = np.array([start[0],x_dash])
         y_stick = np.array([start[1],y_dash])
         z_stick = np.array([start[2],z_dash])
-        self.cone = mlab.quiver3d(x_dash, y_dash, z_dash, u, v, w, mode='cone',\
-        color=a_col,resolution=64,scale_factor=cone_scale)
-        self.stick = mlab.plot3d(x_stick,y_stick,z_stick,color=a_col,\
-        tube_radius=0.05,name='stick')
+        self.cone = mlab.quiver3d(x_dash, y_dash, z_dash, u, v, w, mode='cone',
+                    color=a_col,resolution=64,scale_factor=cone_scale)
+        self.stick = mlab.plot3d(x_stick,y_stick,z_stick,color=a_col, tube_radius=0.05,name='stick')
 
 
 def drawOriginAxes(plotExtents, displace=None, colAxes=True, cones=True,
                    xaxis=True, yaxis=True, zaxis=True, opacity=1.0,
                    scale_arrow_width=1.0, scale_label=0.5,
-                   label_color=(0.1,0.1,0.1), visible=True):
+                   label_color=(0.1,0.1,0.1), visible=True, cone_scale_factor=1.0,
+                   axis_tube_radius=0.05, axis_mono_col=(0.1,0.1,0.1)):
     """Function to draw crossed axes through the origin. The three axes have the
     option of adding a cone, and also may or may not have different colors.
     The axes are also labeled.
@@ -75,21 +75,22 @@ def drawOriginAxes(plotExtents, displace=None, colAxes=True, cones=True,
 
     Examples
     --------
-    plotExtents = (-10,10,-10,10,-10,10)
-    drawOriginAxes(plotExtents,colAxes=True,opacity=0.90)
+    >>>plotExtents = (-10,10,-10,10,-10,10)
+    >>>drawOriginAxes(plotExtents,colAxes=True,opacity=0.90)
 
-    also, if you need to scale the arrow & bar widths and the text label use:
-    drawOriginAxes(plotExtents,colAxes=True,scale_arrow_width=0.95,scale_label=0.5,opacity=0.95)
+    #also, if you need to scale the arrow & bar widths and the text label use:
+    
+    >>>drawOriginAxes(plotExtents, colAxes=True,scale_arrow_width=0.95, scale_label=0.5, opacity=0.95)
 
     Notes
     -----
     For simple, crossed axes without different colors, lables, and cones, it is
     better (simplicity) to use:
 
-    x = np.array([0]);y = np.array([0]);z = np.array([0]); # These may be standard Python scalars too
-    ss = some value (extent of the axes)
-    caxis = mlab.points3d(x, y, z, ss, mode='axes',color=(0,1,0), scale_factor=1)
-    caxis.actor.property.lighting = False
+    >>>x = np.array([0]);y = np.array([0]);z = np.array([0]); # These may be standard Python scalars too
+    >>>ss = some value (extent of the axes)
+    >>>caxis = mlab.points3d(x, y, z, ss, mode='axes',color=(0,1,0), scale_factor=1)
+    >>>caxis.actor.property.lighting = False
     """
     #even if the user doesn't want any axis through the origin, we need to draw
     #something before a Mayavi axes can be attached. So we draw only the z-axis
@@ -101,70 +102,85 @@ def drawOriginAxes(plotExtents, displace=None, colAxes=True, cones=True,
         zaxis=True           #draw the z-axis
     ext2subtract = 0.0
     if cones==True:
-        ext2subtract = 1.0
-    oa_xlim = np.array([plotExtents[0],plotExtents[1]-ext2subtract])
-    oa_ylim = np.array([plotExtents[2],plotExtents[3]-ext2subtract])
-    oa_zlim = np.array([plotExtents[4],plotExtents[5]-ext2subtract])
+        ext2subtract = 1.0*cone_scale_factor
+    oa_xlim = np.array([plotExtents[0], plotExtents[1] - ext2subtract])
+    oa_ylim = np.array([plotExtents[2], plotExtents[3] - ext2subtract])
+    oa_zlim = np.array([plotExtents[4], plotExtents[5] - ext2subtract])
 
     center = np.array([0,0])
     oa_colork = label_color  # label color
 
     if colAxes:
-        oa_colR = (1.0,0,0)
-        oa_colG = (0,1.0,0)
-        oa_colB = (0,0,1.0)
+        oa_colR = (0.9, 0, 0)
+        oa_colG = (0, 0.9, 0)
+        oa_colB = (0, 0, 0.9)
     else:
-        oa_colR,oa_colG,oa_colB = (0.1,0.1,0.1),(0.1,0.1,0.1),(0.1,0.1,0.1)
+        oa_colR = axis_mono_col 
+        oa_colG = axis_mono_col 
+        oa_colB = axis_mono_col
 
     # x-axis
     if xaxis:
         x = np.array([oa_xlim[1]]);y = np.array([0]);z = np.array([0])
-        u = np.array([1]);v = np.array([0]);w = np.array([0])
+        u = np.array([1]); v = np.array([0]); w = np.array([0])
         if cones:
-            x_cone = mlab.quiver3d(x, y, z, u, v, w, mode='cone',color=oa_colR, scale_factor=1.0)
+            x_cone = mlab.quiver3d(x, y, z, u, v, w, mode='cone', color=oa_colR, 
+                                   scale_factor=cone_scale_factor)
             x_cone.actor.property.lighting = False
             x_cone.actor.property.opacity = opacity
-            x_cone.actor.actor.scale = np.array((scale_arrow_width,scale_arrow_width,scale_arrow_width))
-        x_axis = mlab.plot3d(oa_xlim,center,center,color=oa_colR,line_width=1.0,\
-        tube_radius=0.05,name='oax')
-        x_axis.actor.actor.scale = np.array((1.0,scale_arrow_width,scale_arrow_width)) # don't scale along the x-axis
+            x_cone.actor.actor.scale = np.array((scale_arrow_width, scale_arrow_width, scale_arrow_width))
+        x_axis = mlab.plot3d(oa_xlim, center, center, color=oa_colR, line_width=1.0,
+                             tube_radius=axis_tube_radius, name='oax')
+        x_axis.actor.actor.scale = np.array((1.0, scale_arrow_width, scale_arrow_width)) # don't scale along the x-axis
         x_axis.actor.property.lighting = False
         x_axis.actor.property.opacity = opacity
-        xaxis_label = mlab.text3d(0.9*oa_xlim[1],0,0,'x',scale=scale_label,color=oa_colork)
+        # lately, text3d isn't working
+        #xaxis_label = mlab.text3d(0.9*oa_xlim[1], 0, 0, 'x', scale=scale_label, color=oa_colork)
+        xaxis_label = mlab.text(x=0.9*oa_xlim[1], y=0.0*oa_ylim[1], 
+                                z=0, text='x', width=0.01*scale_label, color=oa_colork)
+        
     # y-axis
     if yaxis:
         x = np.array([0]);y = np.array([oa_ylim[1]]);z = np.array([0])
         u = np.array([0]);v = np.array([1]);w = np.array([0])
         if cones:
-            y_cone = mlab.quiver3d(x, y, z, u, v, w, mode='cone',color=oa_colG, scale_factor=1.0)
+            y_cone = mlab.quiver3d(x, y, z, u, v, w, mode='cone', color=oa_colG, 
+                                   scale_factor=cone_scale_factor)
             y_cone.actor.property.lighting = False
             y_cone.actor.property.opacity = opacity
-            y_cone.actor.actor.scale = np.array((scale_arrow_width,scale_arrow_width,scale_arrow_width))
-        y_axis = mlab.plot3d(center,oa_ylim,center,color=oa_colG,line_width=1.0,\
-        tube_radius=0.05,name='oay')
-        y_axis.actor.actor.scale = np.array((scale_arrow_width,1.0,scale_arrow_width))  # don't scale along the y-axis
+            y_cone.actor.actor.scale = np.array((scale_arrow_width, scale_arrow_width, scale_arrow_width))
+        y_axis = mlab.plot3d(center,oa_ylim,center, color=oa_colG, line_width=1.0,
+                             tube_radius=axis_tube_radius, name='oay')
+        y_axis.actor.actor.scale = np.array((scale_arrow_width, 1.0, scale_arrow_width))  # don't scale along the y-axis
         y_axis.actor.property.lighting = False
         y_axis.actor.property.opacity = opacity
-        yaxis_label = mlab.text3d(0,0.9*oa_ylim[1],0,'y',scale=scale_label,color=oa_colork)
+        #lately, text3d is not working        
+        #yaxis_label = mlab.text3d(0,0.9*oa_ylim[1],0,'y',scale=scale_label,color=oa_colork)
+        yaxis_label = mlab.text(x=0.015*oa_xlim[1], y=0.9*oa_ylim[1], 
+                                z=0, text='y', width=0.01*scale_label, color=oa_colork)
     # z-axis
     if zaxis:
         x = np.array([0]);y = np.array([0]);z = np.array([oa_zlim[1]])
         u = np.array([0]);v = np.array([0]);w = np.array([1])
         if cones:
-            z_cone = mlab.quiver3d(x, y, z, u, v, w, mode='cone',color=oa_colB, scale_factor=1.0)
+            z_cone = mlab.quiver3d(x, y, z, u, v, w, mode='cone', color=oa_colB, 
+                                   scale_factor=cone_scale_factor)
             z_cone.actor.property.lighting = False
             z_cone.actor.property.opacity = opacity
-            z_cone.actor.actor.scale = np.array((scale_arrow_width,scale_arrow_width, scale_arrow_width))
-        z_axis = mlab.plot3d(center,center,oa_zlim,color=oa_colB,line_width=1.0,\
-        tube_radius=0.05,name='oaz')
+            z_cone.actor.actor.scale = np.array((scale_arrow_width, scale_arrow_width, scale_arrow_width))
+        z_axis = mlab.plot3d(center, center, oa_zlim, color=oa_colB, line_width=1.0,
+                             tube_radius=axis_tube_radius, name='oaz')
         z_axis.actor.actor.scale = np.array((scale_arrow_width,scale_arrow_width, 1.0))  # don't scale along the z-axis
         z_axis.actor.property.lighting = False
         z_axis.actor.property.opacity = opacity
-        zaxis_label = mlab.text3d(0,0,0.9*oa_zlim[1],'z',scale=scale_label,color=oa_colork)
+        #lately, text3d isn't working         
+        #zaxis_label = mlab.text3d(0,0,0.9*oa_zlim[1],'z',scale=scale_label,color=oa_colork)
+        zaxis_label = mlab.text(x=0.01*oa_xlim[1], y=0.0*oa_ylim[1], 
+                                z=0.9*oa_zlim[1], text='z', width=0.01*scale_label, color=oa_colork)
 
     if visible==False:
         z_axis.actor.actor.visibility=False
-        zaxis_label.actor.actor.visibility=False
+        zaxis_label.actor.visibility=False
 
 def mayaviFig(sceneName="Figure", plotExtents=[-10,10,-10,10,-10,10],
               crossAxes=True,oriAxes=True, colCrossAxes=True, fsize = (400, 350),
@@ -548,15 +564,17 @@ def _test_drawOriginAxes():
     fsize = (600, 650)
     mfig = mlab.figure(sceneName,bgcolor=bgcol,fgcolor=fgcol,size=fsize)
     # for parallel projection (you can also do it using the cam) do
-    # mfig.scene.parallel_projection=True
+    mfig.scene.parallel_projection=True
+    mfig.scene.z_plus_view()
     plotExtents = (-10,10,-10,10,-10,10)
 
     #
-    caxis = mlab.points3d(0, 0, 0, 10, mode='axes',color=(0,0,0), scale_factor=1)
+    caxis = mlab.points3d(0, 0, 0, 10, mode='axes', color=(0,0,0), scale_factor=0.5, opacity=0.5)
     caxis.actor.property.lighting = False
 
     #different scenarios
-    drawOriginAxes(plotExtents,colAxes=True,scale_arrow_width=0.15, scale_label=0.5,opacity=0.95)
+    drawOriginAxes(plotExtents, scale_arrow_width=1.0, scale_label=0.5, 
+                   opacity=0.95, visible=True)
     mlab.show()
 
 
@@ -702,7 +720,7 @@ if __name__ == '__main__':
     # Automatic tests
     # Visual tests: These testing methods are meant to be manual tests which
     # requires visual inspection.
-    #_test_drawOriginAxes()
+    _test_drawOriginAxes()
     #_test_mayaviFig()
     #_test_arrow
-    _test_implicit_plot()
+    #_test_implicit_plot()
