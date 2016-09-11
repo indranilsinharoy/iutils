@@ -6,7 +6,7 @@
 # Author:    Indranil Sinharoy
 #
 # Created:   25/09/2014
-# Copyright: (c) Indranil Sinharoy, 2015
+# Copyright: (c) Indranil Sinharoy, 2015, 2016
 # License:   MIT License
 #-------------------------------------------------------------------------------
 from __future__ import print_function, division

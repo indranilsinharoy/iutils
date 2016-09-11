@@ -16,7 +16,7 @@
 from __future__ import division, print_function
 import math as _math
 import numpy as _np
-from iutils.py.general import approx_equal
+from iutils.pyutils.general import approx_equal
 from iutils.signal.signals import jinc as _jinc
 import iutils.optics.imager as _imgr
 import warnings as _warnings

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #-----------------------------------------------------------------------------------------
-# Name:          genutils.py
+# Name:          general.py
 # Purpose:       General (Python) Utility Functions
 #
 # Author:        Indranil Sinharoy
@@ -129,8 +129,8 @@ def c_binary_string(n, numBits=32):
 def _convert(f):
     """return 1 on success, 0 on fail"""
     try:
-        cmd = "ipython nbconvert --to html --quiet \"{fn}\"".format(fn=f)
-        #print(cmd) # for debugging
+        cmd = "jupyter nbconvert --to html \"{fn}\" --output-dir='./html'".format(fn=f)
+        #print('\nCommand: {}\n'.format(cmd))  # for debugging
         # Wait for the command(s) to get executed ...
         _call(cmd, shell=True)
     except:
@@ -147,6 +147,15 @@ def _getMD5(filename):
 
 
 def nbconvert():
+    """helper function to convert all .ipynb files in the current directory to 
+    html files.
+
+    The output html files are in a directory named `html` under the current 
+    directory. Existing html files with the same name are overwritten.
+
+    If no directory named `html` is present, it will be created (jupyter nbconvert
+    does that automatically)
+    """
     # Get the current directory
     #cdir = path.dirname(path.realpath(__file__))
     cdir =  _getcwd()

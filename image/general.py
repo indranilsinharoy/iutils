@@ -167,4 +167,3 @@ def imshow(image, fig=None, axes=None, subplot=None, interpol=None,
     imPtHandle, fig, axes
     """
     return _mpu.imshow(image,fig, axes, subplot, interpol, xlabel, ylabel, figsize, cmap)
-
