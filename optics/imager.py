@@ -48,7 +48,7 @@ def sensor_nyqusit_frequency(pixelPitch):
     Parameters
     ----------
     pixelPitch : float
-        pixel ptich of the sensor in microns
+        pixel pitch of the sensor in microns
 
     Returns
     -------

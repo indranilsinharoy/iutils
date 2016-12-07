@@ -267,11 +267,11 @@ def airy_pattern(r, zxp, rho, wavelen, norm=1):
     return pattern
 
 def depth_of_focus(effFNum, wavelen=550e-6, firstZero=False, full=False):
-    """half diffractive optical focus depth, ``delta_z``, in the image
+    """returns the half diffractive optical focus depth, ``delta_z``, in the image
     space.
 
-    The total DOF is twice the returned value assuming symmetric intensity
-    distribution about the point fo focus.
+    The total depth of focus is twice the returned value assuming symmetric intensity
+    distribution about the point of focus.
 
     Parameters
     ----------
@@ -283,7 +283,7 @@ def depth_of_focus(effFNum, wavelen=550e-6, firstZero=False, full=False):
     wavelen : float, optional
         wavelength of light (default=550e-6 mm)
     firstZero : boolean, optional
-        Normally the DOF is the region between the focal point (max
+        Usually, the DOF is the region between the focal point (max
         intensity) on the axis and a point along the axis where the
         intensity has fallen upto 20% of the max (see [Wolf2011]_ Page 491,
         and [Gross2007]_ Page 126). This is the region returned by default
@@ -295,8 +295,8 @@ def depth_of_focus(effFNum, wavelen=550e-6, firstZero=False, full=False):
     -------
     deltaZ : float
         one-sided depth of focus (in the image space) in the units of the
-        ``wavelength``. The total DOF is twice the returned value assuming
-        symmetric intensity distribution about the point of focus.
+        ``wavelength``. The total depth of focus is twice the returned value 
+        assuming symmetric intensity distribution about the point of focus.
 
     References
     ----------
@@ -323,8 +323,8 @@ def depth_of_field(focalLength, fNumber, objDist, wavelen=550e-6, firstZero=Fals
         f-number, as the effective f-number is calculated within the
         function based on the ``focalLength`` and the ``objDist``.
     objDist : float
-        distance of the object plane from the lens in the same units
-        as ``focalLength``
+        distance of the object plane from the front (object side) principal 
+        plane in the same units as ``focalLength``. 
     wavelen : float
         the wavelength of light in the same units of ``focalLength``
         (default=550e-6, note that the default's unit is mm)
@@ -368,8 +368,8 @@ def geometric_depth_of_field(focalLength, fNumber, objDist, coc, grossExpr=False
     fNumber : float
         F/# of the optical system
     objDist : float
-        distance of the object from the lens in focus in the same unit
-        as ``f``
+        distance of the object (assumed to be in focus) from the front 
+        (object side) principal plane in the same unit as ``f``
     coc : float
         circle of confusion in the same length-unit as ``f``
     grossExpr : boolean
@@ -517,6 +517,35 @@ def seidel_5(u0, v0, X, Y, wd=0, w040=0, w131=0, w222=0, w220=0, w311=0):
         + w220*u0r**2*rho2   # field curvature
         + w311*u0r**3*Xr )   # distortion
     return w
+
+
+def talbot_length(a, wavelen=550e-6, exact=False):
+    """returns the Talbot length
+
+    Parameters
+    ----------
+    a : float
+        period of diffraction grating in mm
+    wavelen : float, optional
+        wavelength
+    exact : bool
+        use exact expression or not (default)
+
+    Returns
+    -------
+    zt : float
+        Talbot length
+
+    Notes
+    -----
+    The exact expression for Talbot length should be used when the grating 
+    period is close to the wavelength.
+    """
+    if exact:
+        zt = wavelen/(1.0 - _np.sqrt(1.0 - (wavelen / a)**2 ))
+    else:
+        zt = 2.0*a**2 / wavelen
+    return zt
 
 
 #%% Some ray optics helper functions
