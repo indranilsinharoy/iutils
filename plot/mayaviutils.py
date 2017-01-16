@@ -9,7 +9,7 @@
 # Last Modified: 08/01/2014
 #                 1. Added implicit_plot()
 #                 2. Separated plottingUtils to mayaviutils and mplutils.
-# Copyright:     (c) Indranil Sinharoy 2013
+# Copyright:     (c) Indranil Sinharoy 2013 - 2017
 # Licence:       MIT License
 #-------------------------------------------------------------------------------
 from __future__ import division

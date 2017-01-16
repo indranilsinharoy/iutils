@@ -13,7 +13,7 @@
 from __future__ import division, print_function
 import math as _math
 import numpy as _np
-from iutils.py.general import approx_equal as _approx_equal
+from iutils.pyutils.general import approx_equal as _approx_equal
 
 class GaussianBeam(object):
     """Gaussian Beam (perfect TEM00 mode) class"""
