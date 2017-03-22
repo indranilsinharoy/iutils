@@ -18,8 +18,15 @@ from os import listdir as _listdir, getcwd as _getcwd, path as _path, makedirs a
 import hashlib as _hashlib
 from subprocess import call as _call
 import random as _random
-import Tkinter as _Tkinter
-import Tkconstants as _Tkconst
+
+if _sys.version_info[0] < 3:
+    import Tkinter as _Tkinter
+    import Tkconstants as _Tkconst
+else:
+    import tkinter as _Tkinter
+    import tkinter.constants as _Tkconst
+
+
 
 macheps = _sys.float_info.epsilon  # machine epsilon
 

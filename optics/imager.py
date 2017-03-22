@@ -203,9 +203,9 @@ class Scheimpflug(object):
         4. Internally, the class represents angles in radians
         """
         if atype not in ['d', 'r']:
-            raise TypeError, 'Invalid angle type specified'
+            raise TypeError('Invalid angle type specified')
         if (alpha is not None) and (beta is not None):
-            raise TypeError, 'Specify either alpha or beta but not both'
+            raise TypeError('Specify either alpha or beta but not both')
         self._atype = atype
 
         # Set the focal length

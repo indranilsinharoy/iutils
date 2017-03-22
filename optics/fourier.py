@@ -22,6 +22,7 @@ import iutils.optics.imager as _imgr
 import warnings as _warnings
 import collections as _co
 
+
 #%% Module helper functions
 
 def _set_small_values_to_zero(tol, *values):
@@ -666,7 +667,7 @@ def zenith_azimuth_from_dir_cos(gamma, alpha, beta, atype='deg'):
     angles_from_dir_cos()
     """
     if atype not in ['deg', 'rad']:
-        raise ValueError, "Invalid angle type specification"
+        raise ValueError('Invalid angle type specification')
     zenith = _np.arccos(gamma)
     azimuth = _np.arctan2(beta, alpha)
     rayAngle = _co.namedtuple('rayAngle', ['zenith', 'azimuth'])
