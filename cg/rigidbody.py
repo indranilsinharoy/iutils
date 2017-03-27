@@ -7,8 +7,8 @@
 # Author:      Indranil Sinharoy
 #
 # Created:     07/11/2012
-# Modified:    04/28/2015
-# Copyright:   (c) Indranil Sinharoy, 2012 - 2015
+# Modified:    03/26/2017
+# Copyright:   (c) Indranil Sinharoy, 2012 - 2017
 # Licence:     MIT License
 #-----------------------------------------------------------------------------------------
 """utility functions related to rigid body transformations for both computer vision and
@@ -18,8 +18,8 @@ from __future__ import print_function, division
 import numpy as _np
 
 def dual_matrix(vec):
-    """Returns the dual matrix, also known as the hat operator in skew theory. The dual 
-    matrix is the skew-symmetric matrix associated with the 3x1 vector
+    """dual matrix (or the hat operator in skew theory), which is the skew-symmetric 
+    matrix associated with the 3x1 vector
 
     Parameters
     ----------
@@ -33,9 +33,7 @@ def dual_matrix(vec):
 
     Notes
     -----
-    The dual matrix, or the hat operator returns a 3x3 skew-symmetric matrix as shown 
-    below. Given a vector :math:`v = [v_1, v_2, v_3]^T \in \mathbb{R}^3` the hat operator
-    returns:
+    Given a vector :math:`v = [v_1, v_2, v_3]^T \in \mathbb{R}^3` the hat operator is
 
     .. math::
 
@@ -88,11 +86,10 @@ def skew(vec):
     """
     return _np.asarray(dual_matrix(vec))
     
-
 def rotMat2D(angle, atype='r'):
-    """Return a 2D rotation matrix, based on the input angle.
-
-    The (in-plane) rotation is performed in Euclidean space.
+    """rotation matrix to rotate a vector/point in 2-D by `angle` in RHS
+    
+    Positive `angle` corresponds to rotation in counter-clockwise direction.
 
     Usage: ``rotMat2D(angle [,atype]) -> R``
 
@@ -125,7 +122,7 @@ def rotMat2D(angle, atype='r'):
     counter-clockwise by an angle :math:`\\theta` about the origin of the cartesian 
     coordinate system.
 
-    To perform the rotation using the rotation matrix :math:`R`, the position of each 
+    To perform the rotation using the matrix :math:`R`, the position of each 
     point must be represented by a column vector :math:`v`, containing the coordinates 
     of the point. A rotated vector is obtained by using the matrix multiplication 
     :math:`Rv`.
@@ -138,7 +135,7 @@ def rotMat2D(angle, atype='r'):
     return r
 
 def rotMat3D(axis, angle, atype='r', tol=1e-12):
-    """Return 3D rotation matrix for about an arbitrary axis by an angle.
+    """rotation matrix for rotating a vector/point about an arbitrary axis by an angle.
 
     Parameters
     ----------
@@ -181,7 +178,6 @@ def rotMat3D(axis, angle, atype='r', tol=1e-12):
     r[_np.abs(r) < tol] = 0.0
     return r
 
-
 def rot2(theta, deg=True):
     """returns 2D rotation matrix :math:`R \in SO(2)`.
 
@@ -211,7 +207,7 @@ def rot2(theta, deg=True):
     return _np.asarray(rotMat2D(angle=theta, atype=atype))
     
 def rotX(theta, deg=True):
-    """returns 3D matrix :math:`R \in SO(3)` for rotating a vector about the x-axis
+    """3D matrix :math:`R \in SO(3)` for rotating a vector/point about the x-axis
 
     Parameters
     ----------
@@ -222,19 +218,30 @@ def rotX(theta, deg=True):
 
     Returns
     -------
-    r : ndarray
+    r : numpy 3x3 matrix
         the rotation matrix
         
     Notes
     -----
-    Use `rotMat3D()` for rotation about a specific axis using axis angle formula
+    The rotation matrix, :math:`R \in SO(3)`, returned is the following form:
+
+    .. math::
+
+            R(\\theta) =
+            \\left[\\begin{array}{ccc}
+            1 & 0 & 0 \\\\
+            0 & cos(\\theta) & - sin(\\theta)\\\\
+            0 & sin(\\theta) & cos(\\theta)
+            \end{array}\\right]
+
+    See also: `rotMat3D()` for rotation about an arbitrary axis using axis angle formula
     """
     axis = (1, 0, 0)
     angle = _np.deg2rad(theta) if deg else theta
     return rotMat3D(axis, angle)
-    
+
 def rotY(theta, deg=True):
-    """returns 3D matrix :math:`R \in SO(3)` for rotating a vector about the y-axis
+    """returns 3D matrix :math:`R \in SO(3)` for rotating a vector/point about the y-axis
 
     Parameters
     ----------
@@ -245,19 +252,30 @@ def rotY(theta, deg=True):
 
     Returns
     -------
-    r : ndarray
+    r : numpy 3x3 matrix
         the rotation matrix
         
     Notes
     -----
-    Use `rotMat3D()` for rotation about a specific axis using axis angle formula
+    The rotation matrix, :math:`R \in SO(3)`, returned is the following form:
+
+    .. math::
+
+            R(\\theta) =
+            \\left[\\begin{array}{ccc}
+            cos(\\theta) & 0 & sin(\\theta)\\\\
+            0 & 1 & 0 \\\\
+            -sin(\\theta) & 0 & cos(\\theta)
+            \end{array}\\right]
+    
+    See also: `rotMat3D()` for rotation about an arbitrary axis using axis angle formula
     """
     axis = (0, 1, 0)
     angle = _np.deg2rad(theta) if deg else theta
     return rotMat3D(axis, angle)
-    
+  
 def rotZ(theta, deg=True):
-    """returns 3D matrix :math:`R \in SO(3)` for rotating a vector about the z-axis
+    """returns 3D matrix :math:`R \in SO(3)` for rotating a vector/point about the z-axis
 
     Parameters
     ----------
@@ -268,17 +286,120 @@ def rotZ(theta, deg=True):
 
     Returns
     -------
-    r : ndarray
+    r : numpy 3x3 matrix
         the rotation matrix
         
     Notes
     -----
-    Use `rotMat3D()` for rotation about a specific axis using axis angle formula
+    The rotation matrix, :math:`R \in SO(3)`, returned is the following form:
+
+    .. math::
+
+            R(\\theta) =
+            \\left[\\begin{array}{ccc}
+            cos(\\theta) & -sin(\\theta) & 0 \\\\
+            sin(\\theta) & cos(\\theta) & 0 \\\\
+             0 & 0 & 1 
+            \end{array}\\right]
+            
+    See also: `rotMat3D()` for rotation about an arbitrary axis using axis angle formula
     """
     axis = (0, 0, 1)
     angle = _np.deg2rad(theta) if deg else theta
     return rotMat3D(axis, angle)
 
+def rotXYZ_intrinsic(phi, theta, psi, order='X-Y-Z', deg=True):
+    """returns composed rotation matrix from Euler angles (xy'z''), s.t. the elementary
+    rotations are intrinsic
+
+    Parameters
+    ----------
+    phi : float
+        angle of rotation about the x axis (x)  
+    theta : float
+        angle of rotation about the new y axis (y') 
+    psi : float
+        angle of rotation about the new z axis (z") 
+    order : string 
+        valid string sequence that specifies the order of rotation. For example, 
+        'X-Y-Z' represents first rotation about x-axis, followed by second
+        rotation about the y-axis, followed by third rotation about the z-axis.
+    deg : bool
+        `True` = degree (default), `False` = radians
+
+    Returns
+    -------
+    r : ndarray
+        the rotation matrix
+    """
+    X = rotX(phi, deg)
+    Y = rotY(theta, deg)
+    Z = rotZ(psi, deg)
+    assert isinstance(X, _np.matrix) # in order to use the '*' operator to matrix multiply
+    assert isinstance(Y, _np.matrix)
+    assert isinstance(Z, _np.matrix)
+    order = order.split('-')
+    composition = '*'.join(order)
+    return eval(composition)
+
+# After complete movement to Python 3, the function parameters could be changed to:
+#def rotXYZ_intrinsic(ϕ, θ, ψ, deg=True):
+#    """returns composed rotation matrix from Euler angles (xy'z''), s.t. the elementary
+#    rotations are intrinsic
+#
+#    Parameters
+#    ----------
+#    ϕ : float
+#        angle of rotation about the x axis (x) 
+#    θ : float
+#        angle of rotation about the new y axis (y') 
+#    ψ : float
+#        angle of rotation about the new z axis (z")
+#
+#    Returns
+#    -------
+#    r : ndarray
+#        the rotation matrix
+#    """
+#    rx = rotX(ϕ, deg)
+#    ry = rotY(θ, deg)
+#    rz = rotZ(ψ, deg)
+#    return rx*ry*rz
+
+def rotXYZ_extrinsic(phi, theta, psi, order='X-Y-Z', deg=True):
+    """returns composed rotation matrix from Euler angles (xyz), s.t. the elementary
+    rotations are extrinsic
+
+    Parameters
+    ----------
+    phi : float
+        angle of rotation about the x axis (x) 
+    theta : float
+        angle of rotation about the y axis (y) 
+    psi : float
+        angle of rotation about the z axis (z) 
+    order : string 
+        valid string sequence that specifies the order of rotation. For example, 
+        'X-Y-Z' represents first rotation about x-axis, followed by second
+        rotation about the y-axis, followed by third rotation about the z-axis.
+    deg : bool
+        `True` = degree (default), `False` = radians
+
+    Returns
+    -------
+    r : ndarray
+        the rotation matrix
+    """
+    X = rotX(phi, deg)
+    Y = rotY(theta, deg)
+    Z = rotZ(psi, deg)
+    assert isinstance(X, _np.matrix) # in order to use the '*' operator to matrix multiply
+    assert isinstance(Y, _np.matrix)
+    assert isinstance(Z, _np.matrix)
+    order = order.split('-')
+    order.reverse()
+    composition = '*'.join(order)
+    return eval(composition)
 
 def se2(x, y, theta=0, deg=True):
     """returns planar translation and rotation transformation matrix SE(2) as a 
@@ -398,6 +519,7 @@ def _test_rot2():
 def _test_rotX():
     theta = 15.0
     r1 = rotX(theta)
+    assert isinstance(r1, _np.matrix)
     r2 = rotX(_np.deg2rad(theta), deg=False)
     _nt.assert_array_almost_equal(r1, r2)
     print("test rotX() successful")   
@@ -405,6 +527,7 @@ def _test_rotX():
 def _test_rotY():
     theta = 15.0
     r1 = rotY(theta)
+    assert isinstance(r1, _np.matrix)
     r2 = rotY(_np.deg2rad(theta), deg=False)
     _nt.assert_array_almost_equal(r1, r2)
     print("test rotY() successful")
@@ -412,9 +535,32 @@ def _test_rotY():
 def _test_rotZ():
     theta = 15.0
     r1 = rotZ(theta)
+    assert isinstance(r1, _np.matrix)
     r2 = rotZ(_np.deg2rad(theta), deg=False)
     _nt.assert_array_almost_equal(r1, r2)
     print("test rotZ() successful")
+    
+def _test_rotXYZ_intrinsic():
+    phi, theta, psi = 20, 30, 40
+    r = rotXYZ_intrinsic(phi, theta, psi)
+    assert isinstance(r, _np.matrix)
+    re = rotX(phi)*rotY(theta)*rotZ(psi)
+    _nt.assert_array_almost_equal(r, re)
+    r = rotXYZ_intrinsic(phi, theta, psi, order='Z-Y-X')
+    re = rotZ(psi)*rotY(theta)*rotX(phi)
+    _nt.assert_array_almost_equal(r, re)
+    print('test rotXYZ_intrinsic() successful')
+
+def _test_rotXYZ_extrinsic():
+    phi, theta, psi = 20, 30, 40
+    r = rotXYZ_extrinsic(phi, theta, psi)
+    assert isinstance(r, _np.matrix)
+    re = rotZ(psi)*rotY(theta)*rotX(phi)
+    _nt.assert_array_almost_equal(r, re)
+    r = rotXYZ_extrinsic(phi, theta, psi, order='Z-Y-X')
+    re = rotX(phi)*rotY(theta)*rotZ(psi) 
+    _nt.assert_array_almost_equal(r, re)
+    print('test rotXYZ_extrinsic() successful')
 
 def _test_se2():
     T1 = se2(1, 2, 30)
@@ -424,7 +570,7 @@ def _test_se2():
     _nt.assert_array_almost_equal(T1, T1exp, decimal=6)
     print("test se2() successful")
 
-
+#%%
 if __name__ == '__main__':
     import numpy.testing as _nt
     import numpy.linalg as _lalg
@@ -438,4 +584,6 @@ if __name__ == '__main__':
     _test_rotX()
     _test_rotY()
     _test_rotZ()
-    _test_se2()   
+    _test_rotXYZ_intrinsic()
+    _test_rotXYZ_extrinsic()
+    _test_se2()
