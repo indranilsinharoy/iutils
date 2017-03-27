@@ -6,7 +6,7 @@
 # Author:        Indranil Sinharoy
 #
 # Created:       09/22/2012
-# Last Modified: 04/30/2015
+# Last Modified: 03/27/2017
 # Copyright:     (c) Indranil Sinharoy 2012, 2013, 2014, 2015
 # License:       MIT License
 #-----------------------------------------------------------------------------------------
@@ -669,7 +669,10 @@ def zenith_azimuth_from_dir_cos(gamma, alpha, beta, atype='deg'):
     if atype not in ['deg', 'rad']:
         raise ValueError('Invalid angle type specification')
     zenith = _np.arccos(gamma)
+    # 0 <= zenith <= pi, guaranteed by numpy's arccos function. see numpy's doc. 
     azimuth = _np.arctan2(beta, alpha)
+    if azimuth < 0: # convert azimuth angle to lie between 0 and 2*pi
+        azimuth += 2.0*_np.pi
     rayAngle = _co.namedtuple('rayAngle', ['zenith', 'azimuth'])
     if atype=='deg':
         return rayAngle(_np.rad2deg(zenith), _np.rad2deg(azimuth))
@@ -1122,6 +1125,18 @@ def _test_zenith_azimuth_from_dir_cos():
                                                   0.0,
                                                   0.099503719020998957)
     nt.assert_almost_equal(azimuth, 90.0, decimal=8)
+    # test to see the whether 0 <= zenith <= pi and 0 <= azimuth <= 2pi
+    a, b, g = dir_cos_from_zenith_azimuth(zenith=30.0, azimuth=40.0)
+    # direction cosines in the reverse direction
+    zenith, azimuth = zenith_azimuth_from_dir_cos(-g, -a, -b)
+    nt.assert_equal((0 <= zenith <= 180.0), True, 
+                    err_msg='zenith ({:0.2f}) outside [0, pi]'.format(zenith), verbose=False)
+    nt.assert_equal((0 <= azimuth <= 360.0), True, 
+                    err_msg='azimuth ({:0.2f}) outside [0, 2*pi]'.format(azimuth), verbose=False)
+    
+    a_n, b_n, g_n =  dir_cos_from_zenith_azimuth(zenith=zenith, azimuth=azimuth) 
+    nt.assert_array_almost_equal(_np.array((a + a_n, b + b_n, g + g_n)), _np.zeros(3),
+                                 err_msg='Expecting negative values for reversed direction cosines')    
     print("test_zenith_azimuth_from_dir_cos() is successful")
 
 def _test_get_alpha_beta_gamma_set():
