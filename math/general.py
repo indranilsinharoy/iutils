@@ -6,8 +6,8 @@
 # Author:      Indranil Sinharoy
 #
 # Created:        22/09/2012
-# Last Modified:  12/24/2014
-# Copyright:      (c) Indranil Sinharoy, 2012 - 2015
+# Last Modified:  04/24/2017
+# Copyright:      (c) Indranil Sinharoy, 2012 - 2017
 # Licence:        MIT License
 #-------------------------------------------------------------------------------
 """General math utilities
@@ -37,8 +37,9 @@ arctand.__doc__ = "Inverse tan in degrees"
 
 
 def factorial(n):
-    """
-    factorial is defined as n! = n*(n-1)!
+    """return n factorial    
+
+    The factorial is defined as n! = n*(n-1)!
     Note: The recursive factoial implementation will break down if n is too large
     """
     if(n==0):
@@ -47,8 +48,7 @@ def factorial(n):
         return n*factorial(n-1)
 
 def fibonacci(n):
-    """
-    returns a fibonacci sequence generator object for fibonacci sequence of n
+    """returns a fibonacci sequence generator object for fibonacci sequence of n
     elements
 
     Examples
@@ -56,7 +56,7 @@ def fibonacci(n):
     >>> fs = fibonacci(2)
     >>> list(fs)
     [1, 1]
-    >>> fs = fibonaccig(10)
+    >>> fs = fibonacci(10)
     >>> list(fs)
     [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
     """
@@ -68,8 +68,7 @@ def fibonacci(n):
         count +=1
 
 def golden_ratio(n):
-    """
-    Evaluate the Golden Ratio to an accuracy of n decimal places
+    """returns the Golden Ratio to an accuracy of `n` decimal places
 
     Examples
     --------
@@ -84,9 +83,17 @@ def golden_ratio(n):
 
 
 def nCk(n, k):
-    """
-    Evaluate `n` combination `k`, i.e. choose `k` items out of `n` items,
-    is defined for positive integers `n>=k` as `nCk(n,k) = n!/(k!*(n-k)!)`
+    """return the number of possible combinations of `k` objects from a set of `n` objects
+    (i.e., order does not matter).
+
+    Other phrases include "`n` choose `k`" or "the number of combinations of `n` things 
+    taken `k` at a time".
+
+    Defined for positive integers `n>=k` as `nCk(n,k) = n!/(k!*(n-k)!)`
+
+    nCk is often represented as  / n \
+                                 |   |
+                                 \ k /
 
     Examples
     --------
@@ -95,25 +102,35 @@ def nCk(n, k):
 
     See Also
     --------
-    itertools.combinations(iterable, r): It returns successive r-length
-        combinations of elements in the iterable. For example,
+    itertools.combinations(iterable, r): It returns successive r-length combinations of 
+    elements in the iterable. For example,
         `list(combinations(['A', 'B', 'C'], 2)) -->
         [('A', 'B'), ('A', 'C'), ('B', 'C')]`
     """
     return factorial(n)/(factorial(k)*factorial(n-k))
 
 def nPk(n,k):
-    """
-    nPk: nPk is n permutation k or arange k items out of n items, is defined for
-    positive integers n>=k as nPk(n,k) = n!/(n-k)!
+    """return the number of ways to arange `k` items out of `n` items. i.e., the order 
+    matters 
+
+    It is defined for positive integers `n>=k` as `nPk(n,k) = n!/(n-k)!`
     """
     return factorial(n)/factorial(n-k)
 
-def binomial_distribution(n,p):
-    """
-    Binomial distribution is the probability distribution
-    Formula nCk* p^k * (1-p)^(n-k)
-    inputs n = number of samples/experiments and p the probability of success
+def binomial_distribution(n, p):
+    """returns the Binomial probability distribution (PMF)
+
+    Parameters
+    ----------
+    n : integer
+        the number of samples or subexperiments or Bernoulli trials
+    p : real
+        the probability of success in each Bernoulli trial
+
+    Notes
+    -----
+    The PMF for a binomial RV X is given as:
+        p_x[k] = nCk* p^k * (1-p)^(n-k)
     """
     return [nCk(n,k)*(p**k)*((1-p)**(n-k)) for k in range(n+1)]
 
