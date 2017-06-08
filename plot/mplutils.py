@@ -103,14 +103,14 @@ def set_spines(axes=None, remove=None, stype=None, soffset=None, zorder=3,
     if remove:
         for r in remove:
             if r not in allSpines + ['all']:
-                raise ValueError, 'Invalid remove types given'
+                raise ValueError('Invalid remove types given')
     else:
         remove = []
 
     # Verify stype
     if stype:
         if stype not in ['center_data', 'center_axes']: # there could be other variations in future
-            raise ValueError, 'Invalid stype given'
+            raise ValueError('Invalid stype given')
 
     # Define what to do if stype is either 'center_data' or 'center_axes'
     if stype:
