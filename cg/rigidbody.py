@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #-----------------------------------------------------------------------------------------
 # Name:        rigidbody.py
-# Purpose:     Utility functions useful for computer graphics, especially related to 
+# Purpose:     Utility functions useful for computer graphics, especially related to
 #              rigid body transformations
 #
 # Author:      Indranil Sinharoy
@@ -86,7 +86,7 @@ def skew(vec):
     This functions is same as ``dual_matrix()``, except that it returns ndarray.
     """
     return _np.asarray(dual_matrix(vec))
-    
+
 def rotMat2D(angle, atype='r'):
     """returns rotation matrix to rotate a vector/point in 2-D by `angle` about the
     origin in counter-clockwise direction
@@ -209,7 +209,7 @@ def rot2(theta, deg=True):
     """
     atype = 'd' if deg else 'r'
     return _np.asarray(rotMat2D(angle=theta, atype=atype))
-    
+
 def rotX(theta, deg=True):
     """3D matrix :math:`R \in SO(3)` for rotating a vector/point about the x-axis
 
@@ -277,7 +277,7 @@ def rotY(theta, deg=True):
     axis = (0, 1, 0)
     angle = _np.deg2rad(theta) if deg else theta
     return rotMat3D(axis, angle)
-  
+
 def rotZ(theta, deg=True):
     """returns 3D matrix :math:`R \in SO(3)` for rotating a vector/point about the z-axis
 
@@ -313,26 +313,26 @@ def rotZ(theta, deg=True):
     return rotMat3D(axis, angle)
 
 
-def euler2rot(phi, theta, psi, order='X-Y-Z', ertype='extrinsic', deg=True):
+def euler2rot(angle1, angle2, angle3, order='X-Y-Z', ertype='extrinsic', deg=True):
     """returns rotation matrix from Euler angles
 
     Parameters
     ----------
-    phi : float
+    angle1 : float
         angle for first rotation   
-    theta : float
+    angle2 : float
         angle for second rotation   
-    psi : float
+    angle3 : float
         angle for third rotation  
     order : string 
         valid string sequence that specifies the order of rotation. Examples are 'X-Y-Z',
         'Z-Y-Z', 'z-x-z', 'z-x-y'. Furthermore, if `ertype` is "intrinsic", then 'X-Y-Z' 
-        returns :math:`R=R_x(\phi)*R_y(\\theta)*R_z(\psi)` and if `ertype` is "extrinsic", 
-        then the same sequence, 'X-Y-Z', returns :math:`R=R_z(\psi)*R_y(\\theta)*R_x(\phi)` 
+        returns :math:`R=R_x(\\angle1)*R_y(\\angle2)*R_z(\\angle3)` and if `ertype` is "extrinsic", 
+        then the same sequence, 'X-Y-Z', returns :math:`R=R_z(\\angle3)*R_y(\\angle2)*R_x(\\angle1)` 
     ertype : string ('extrinsic' or 'intrinsic')
         the type of elemental rotations. `extrinsic` represent rotations about the axes of
-        the fixed origial coordinate system, `intrinsic` represent rotations about the axes
-        of the rotating coordinate system attached to the rigid body
+        the fixed origial coordinate system, `intrinsic` (or fixed-body) represent rotations 
+        about the axes of the rotating coordinate system attached to the rigid body
     deg : bool
         `True` = degree (default), `False` = radians
 
@@ -343,31 +343,33 @@ def euler2rot(phi, theta, psi, order='X-Y-Z', ertype='extrinsic', deg=True):
         
     Notes
     -----
-    In the context of this function "Euler angles" constitutes both the Proper Euler angles
-    and the Tait-Bryan angles.
+    1. In the context of this function "Euler angles" constitutes both the Proper Euler angles
+       and the Tait-Bryan angles. 
+    2. The order of the input angles are specified in the order of rotations (corresponding 
+       to the `order`). They are not specified with respect to any particular axis. 
     
     References
     ----------
     .. [1] Euler angles: https://en.wikipedia.org/wiki/Euler_angles
-    """ 
-    X = rotX 
-    Y = rotY 
-    Z = rotZ 
+    """
+    X = rotX
+    Y = rotY
+    Z = rotZ
     order = order.upper()
     order = order.split('-')
     if not set(order).issubset({'X', 'Y', 'Z'}):
         raise ValueError('Incorrect order parameter ({}) specified.'.format(order))
     if ertype == 'extrinsic':
         order.reverse()
-        composition = '{}(psi, deg)*{}(theta, deg)*{}(phi, deg)'.format(*order)
+        composition = '{}(angle3, deg)*{}(angle2, deg)*{}(angle1, deg)'.format(*order)
     elif ertype == 'intrinsic':
-        composition = '{}(phi, deg)*{}(theta, deg)*{}(psi, deg)'.format(*order)
+        composition = '{}(angle1, deg)*{}(angle2, deg)*{}(angle3, deg)'.format(*order)
     else:
         raise ValueError('Incorrect elemental rotation parameter ({}) specified.'.format(ertype))
     #print(composition)
     return eval(composition)
-    
- 
+
+
 def se2(x, y, theta=0, deg=True):
     """returns homogeneous transformation matrix SE(2) for planar translation and rotation  
     
@@ -411,7 +413,7 @@ def se2(x, y, theta=0, deg=True):
     T = homo(rot2(theta, deg))
     T[:2, 2] = [x, y]
     return _np.matrix(T)
-   
+
 #%% Utility functions
 
 def homo(m):
@@ -436,27 +438,121 @@ def homo(m):
     else:
         return h
 
+def rot2euler(r, order='X-Y-Z'):
+    """returns the Euler angles corresponding to the rotation matrix
+    
+    Parameters
+    ----------
+    r : ndarray
+        3x3 rotation matrix
+    order : string
+        only 'X-Y-Z' & 'Z-Y-X' extrinsic rotations, which correspond to
+        'Rz(ψ)Ry(θ)Rx(ϕ)' & 'Rx(ϕ)Ry(θ)Rz(ψ)' respectively are implemented.
+        These compositions also correspond to ZYX and XYZ intrinsic rotations
+        respectively. 
+    
+    Returns
+    -------
+    phi : float
+        angle w.r.t. x-axis or roll, in radians
+    theta : float
+        angle w.r.t. y-axis or pitch, in radians
+    psi : float
+        angle w.r.t. z-axis or yaw, in radians
+    
+    Reference
+    ---------
+    The function "RotationMatrixToEulerAngles(R)" in VSRS_to_JSON.py
+    
+    Note
+    ----
+    If theta in the corresponding to the rotation matrix is very near 
+    90°, we approach a Gimbal-lock situation, and there are infinite
+    solutions.
+    """
+    def allmost_equal_to_zero(val):
+        return abs(val) < 1e-12
+    psi = 0.0    # yaw
+    theta = 0.0  # pitch
+    phi = 0.0    # roll
+    if order == 'X-Y-Z':  # extrinsic XYZ or intrinsic ZYX
+        if allmost_equal_to_zero(r[0, 0]) and allmost_equal_to_zero(r[1, 0]):
+            # Gimbal-lock; infinite solutions possible, return one solution
+            psi = _np.arctan2(r[1, 2], r[0, 2])
+            if r[2, 0] < 0.0:
+                theta = _np.pi / 2
+            else:
+                theta = -_np.pi / 2
+            phi = 0.0
+        else:
+            psi = _np.arctan2(r[1, 0], r[0, 0])
+            if allmost_equal_to_zero(r[0, 0]):
+                theta = _np.arctan2(-r[2, 0], r[1, 0] / _np.sin(psi))
+            else:
+                theta = _np.arctan2(-r[2, 0], r[0, 0] / _np.cos(psi))
+            phi = _np.arctan2(r[2, 1], r[2, 2])
+
+    elif order == 'Z-Y-X':  # extrinsic ZYX or intrinsic XYZ
+        if allmost_equal_to_zero(r[1, 2]) and allmost_equal_to_zero(r[2, 2]):
+            # Gimbal-lock; infinite solutions possible, return one solution
+            phi = _np.arctan2(r[0, 1], r[1, 1])
+            if r[2, 2] < 0.0:
+                theta = -_np.pi / 2
+            else:
+                theta = _np.pi / 2
+            psi = 0.0
+        else:
+            phi = _np.arctan2(-r[1, 2], r[2, 2])
+            if allmost_equal_to_zero(r[2, 2]):
+                theta = _np.arctan2(r[0, 2], -r[1, 0] / _np.sin(phi))
+            else:
+                theta = _np.arctan2(r[0, 2], r[2, 2] / _np.cos(phi))
+            psi = _np.arctan2(-r[0, 1], r[0, 0])
+
+    else:  # order different from 'X-Y-Z' and 'Z-Y-X'
+        raise NotImplementedError("To be implemented")
+    return phi, theta, psi
 #%% Symbolic Computation functions (experimental, requires Sympy)
 
 def rotX_symbolic(angle='ϕ'):
-    t = _sy.symbols(angle, real=True)
-    r = _sy.Matrix(((1,       0,              0 ), 
+    """
+    Example
+    -------
+    >>> import sympy as sy
+    >>> rotX_symbolic('phi') # same as rg.rotX_symbolic()
+    +-                 -+
+    | 1    0       0    |
+    | 0  cos(𝜙) sin(𝜙) |
+    | 0 −sin(𝜙) cos(𝜙) |
+    +-                 -+
+    """
+    if isinstance(angle, _sy.Symbol):
+        t = angle
+    else:
+        t = _sy.symbols(angle, real=True)
+    r = _sy.Matrix(((1,       0,              0 ),
                     (0,  _sy.cos(t),  -_sy.sin(t)),
                     (0,  _sy.sin(t),   _sy.cos(t)),
                     ))
     return r
 
 def rotY_symbolic(angle='θ'):
-    t = _sy.symbols(angle, real=True)
-    r = _sy.Matrix(((_sy.cos(t),  0, _sy.sin(t)), 
+    if isinstance(angle, _sy.Symbol):
+        t = angle
+    else:
+        t = _sy.symbols(angle, real=True)
+    r = _sy.Matrix(((_sy.cos(t),  0, _sy.sin(t)),
                     (     0,      1,     0     ),
                     (-_sy.sin(t), 0, _sy.cos(t)),
                     ))
     return r
 
 def rotZ_symbolic(angle='ψ'):
-    t = _sy.symbols(angle, real=True)
-    r = _sy.Matrix(((_sy.cos(t), -_sy.sin(t), 0), 
+    if isinstance(angle, _sy.Symbol):
+        t = angle
+    else:
+        t = _sy.symbols(angle, real=True)
+    r = _sy.Matrix(((_sy.cos(t), -_sy.sin(t), 0),
                     (_sy.sin(t),  _sy.cos(t), 0),
                     (     0,          0,      1),
                     ))
@@ -464,6 +560,22 @@ def rotZ_symbolic(angle='ψ'):
 
 def euler2rot_symbolic(angle1='ϕ', angle2='θ', angle3='ψ', order='X-Y-Z', ertype='extrinsic'):
     """returns symbolic expression for the composition of elementary rotation matrices
+
+    Parameters
+    ----------
+    angle1 : string or sympy.Symbol
+        angle representing first rotation   
+    angle2 : string or sympy.Symbol
+        angle representing second rotation   
+    angle3 : string or sympy.Symbol
+        angle representing third rotation  
+    order : string 
+        valid string sequence that specifies the order of rotation. See `euler2rot()`
+        for details 
+    ertype : string ('extrinsic' or 'intrinsic') See `euler2rot()` for details
+        the type of elemental rotations. 
+    deg : bool
+        `True` = degree (default), `False` = radians
     
     Example
     -------
@@ -474,9 +586,14 @@ def euler2rot_symbolic(angle1='ϕ', angle2='θ', angle3='ψ', order='X-Y-Z', ert
            [                  c(2)*c(3),                 -c(2)*s(3),       s(2)],
            [ c(1)*s(3) + c(3)*s(1)*s(2), c(1)*c(3) - s(1)*s(2)*s(3), -c(2)*s(1)],
            [-c(1)*c(3)*s(2) + s(1)*s(3), c(1)*s(2)*s(3) + c(3)*s(1),  c(1)*c(2)]])
+
+    Note
+    ----
+    The order of the input angles are specified in the order of rotations (corresponding 
+    to the `order`). They are not specified with respect to any particular axis. 
     """
-    X = rotX_symbolic 
-    Y = rotY_symbolic 
+    X = rotX_symbolic
+    Y = rotY_symbolic
     Z = rotZ_symbolic
     order = order.split('-')
     if ertype == 'extrinsic':
@@ -509,7 +626,7 @@ def _test_skew():
     sk = skew(v)
     _nt.assert_almost_equal(dm, sk, decimal=6)
     print("test skew() successful")
-    
+
 def _test_rotMat2D():
     """test the function rotMat2D()
     """
@@ -557,9 +674,9 @@ def _test_rotMat3D():
     print("test rotMat3D() successful")
 
 def _test_rot2():
-    theta = 15.0    
+    theta = 15.0
     r1 = rot2(theta)
-    r2 = rot2(_np.deg2rad(theta), deg=False)    
+    r2 = rot2(_np.deg2rad(theta), deg=False)
     _nt.assert_array_almost_equal(r1, r2)
     print("test rot2() successful")
 
@@ -569,8 +686,8 @@ def _test_rotX():
     assert isinstance(r1, _np.matrix)
     r2 = rotX(_np.deg2rad(theta), deg=False)
     _nt.assert_array_almost_equal(r1, r2)
-    print("test rotX() successful")   
-    
+    print("test rotX() successful")
+
 def _test_rotY():
     theta = 15.0
     r1 = rotY(theta)
@@ -578,7 +695,7 @@ def _test_rotY():
     r2 = rotY(_np.deg2rad(theta), deg=False)
     _nt.assert_array_almost_equal(r1, r2)
     print("test rotY() successful")
-    
+
 def _test_rotZ():
     theta = 15.0
     r1 = rotZ(theta)
@@ -586,9 +703,9 @@ def _test_rotZ():
     r2 = rotZ(_np.deg2rad(theta), deg=False)
     _nt.assert_array_almost_equal(r1, r2)
     print("test rotZ() successful")
-      
+
 def _test_euler2rot():
-    # check with verified, known result 
+    # check with verified, known result
     r = euler2rot(0.1, 0.2, 0.3, 'Z-Y-Z', 'intrinsic', False)
     assert isinstance(r, _np.matrix)
     rexp = _np.matrix([[ 0.902113  , -0.38355704,  0.19767681],
@@ -632,12 +749,12 @@ def _test_se2():
                        [      0.0,       0.0,  1.0]])
     _nt.assert_array_almost_equal(T1, T1exp, decimal=6)
     print("test se2() successful")
-    
+
 def _test_homo():
     h1 = homo(rot2(30))
     _nt.assert_array_equal(_np.shape(h1), (3, 3))
     assert isinstance(h1, _np.ndarray)
-    _nt.assert_array_equal(h1[2:], _np.array([[0, 0, 1]])) 
+    _nt.assert_array_equal(h1[2:], _np.array([[0, 0, 1]]))
     _nt.assert_array_equal(h1[:,2], _np.array([0, 0, 1]))
     _nt.assert_array_almost_equal(h1[:2, :2], rot2(30))
     h2 = homo(rotMat2D(30))
@@ -646,9 +763,22 @@ def _test_homo():
     r = euler2rot(20, 30, 40)
     h3 = homo(r)
     _nt.assert_array_equal(_np.shape(h3), (4, 4))
-    assert isinstance(h3, _np.matrix) 
+    assert isinstance(h3, _np.matrix)
     _nt.assert_array_almost_equal(h3[:3, :3], r)
     print('test homo() successful')
+
+def _test_rot2euler():
+    angle1, angle2, angle3 = 10.0, 20.0, -30.0
+    r = euler2rot(angle1, angle2, angle3, order='X-Y-Z', ertype='extrinsic')
+    phi, theta, psi = _np.rad2deg(rot2euler(r, order='X-Y-Z'))
+    _nt.assert_array_almost_equal(
+        [angle1, angle2, angle3], [phi, theta, psi], decimal=6)
+
+    r = euler2rot(angle1, angle2, angle3, order='Z-Y-X', ertype='extrinsic')
+    phi, theta, psi = _np.rad2deg(rot2euler(r, order='Z-Y-X'))
+    _nt.assert_array_almost_equal(
+        [angle3, angle2, angle1], [phi, theta, psi], decimal=6)
+    print('test rot2euler() successful')
 
 #%%
 if __name__ == '__main__':
@@ -656,7 +786,7 @@ if __name__ == '__main__':
     import numpy.linalg as _lalg
     from numpy import set_printoptions
     set_printoptions(precision=4, linewidth=85)  # for visual output in manual tests.
-    _test_dual_matrix() 
+    _test_dual_matrix()
     _test_skew()
     _test_rotMat2D()
     _test_rotMat3D()
@@ -667,3 +797,4 @@ if __name__ == '__main__':
     _test_euler2rot()
     _test_se2()
     _test_homo()
+    _test_rot2euler()
